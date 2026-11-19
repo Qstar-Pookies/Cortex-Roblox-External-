@@ -1,0 +1,3250 @@
+#include "settings/functions.h"
+#include "settings/theme.h"
+#include <hacks/system/settings/settings.h>
+#include <hacks/system/config/config.h>
+#include <hacks/system/notifications/notifications.h>
+#include <hacks/exploits/audio/hitsound/hitsoundsdata.h>
+#include <hacks/luau/vm/vm.h>
+#include <hacks/exploits/environment/explorer/explorer.h>
+#include <hacks/visuals/model/modelviewer.h>
+#include <hacks/visuals/chams/memory/shader.h>
+#include <hacks/visuals/chams/memory/chams.h>
+#include <hacks/visuals/chams/native/native.h>
+#include <hacks/visuals/skyshader/skyshader.h>
+#include <hacks/visuals/chams/highlight/highlight.h>
+#include <hacks/system/playerlist/playerlist.h>
+#include <menu/render/render.h>
+#include <game/cache/core/cache.h>
+#include <menu/editor/editor.h>
+#include <game/game/game.h>
+#include <hacks/system/waypoints/waypoints.h>
+#include <hacks/visuals/lighting/lighting.h>
+#include <hacks/luau/mcp/mcp_server.h>
+#include <hacks/visuals/manager/manager.h>
+#include <hacks/system/serverbrowser/serverbrowser.h>
+#include <hacks/exploits/locomotion/movement/movement.h>
+#include <hacks/exploits/utility/misc/misc.h>
+#include <hacks/exploits/utility/remotespy/remotespy.h>
+#include <hacks/exploits/utility/instancedumper/instancedumper.h>
+#include <hacks/visuals/radar/radar.h>
+#include <hacks/visuals/bullettracers/bullettracers.h>
+#include <hacks/system/keybind/keybind.h>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+#include <thread>
+#include <chrono>
+#include <shellapi.h>
+#include <Windows.h>
+#include <commdlg.h>
+#pragma comment(lib, "comdlg32.lib")
+
+static bool select_sound_file(char* out_path, size_t max_len)
+{
+	OPENFILENAMEA ofn;
+	char file_buf[MAX_PATH] = "";
+	if (out_path && strlen(out_path) > 0)
+	{
+		strncpy_s(file_buf, out_path, sizeof(file_buf) - 1);
+	}
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = (::render && ::render->detail) ? ::render->detail->window : NULL;
+	ofn.lpstrFile = file_buf;
+	ofn.nMaxFile = sizeof(file_buf);
+	ofn.lpstrFilter = "Audio Files (*.wav;*.mp3)\0*.wav;*.mp3\0All Files (*.*)\0*.*\0";
+	ofn.nFilterIndex = 1;
+	ofn.lpstrTitle = "Select Custom Sound File";
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+	if (GetOpenFileNameA(&ofn))
+	{
+		strncpy_s(out_path, max_len, file_buf, max_len - 1);
+		return true;
+	}
+	return false;
+}
+
+static const char* server_sort_names[] = { "Lowest Players", "Highest Players", "Lowest Ping", "Highest FPS" };
+
+static editor::lua_editor g_lua_editor;
+static bool show_load_confirmation = false;
+static bool show_unload_confirmation = false;
+static std::string pending_load_config_name = "";
+static bool is_overwrite_confirmation = false;
+
+static const char* target_parts[] = { "Head", "Torso", "HumanoidRootPart", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Closest Part", "Nearest" };
+static const char* aim_modes[] = { "Mouse", "Camera" };
+static const char* silentaim_methods[] = { "Raycast", "Mouse", "Viewport", "Camera" };
+static const char* skybox_presets[] = { "None", "Axis", "Galaxy", "Heaven", "Hell", "Matrix", "Storm", "Sunset", "Night City", "Aurora", "Pink", "Custom" };
+static const char* sky_shader_modes[] = { "Nebula", "Aurora", "Starfield", "Galaxy", "Synthwave", "Sunset", "Plasma" };
+static const char* box_types[] = { "Corner", "Full" };
+static const char* tracer_origins[] = { "Bottom", "Center", "Top" };
+static const char* chams_types[] = { "Clipper2", "Memory", "Engine", "Native", "Highlight" };
+static const char* hitsound_names[] = { "Skeet", "Neverlose", "Rust", "COD", "Bell", "Bubble", "Bonk" };
+static const char* healthbar_gradients[] = { "Vertical", "Horizontal", "Pulse" };
+static const char* healthbar_positions[] = { "Left", "Right", "Bottom", "Top" };
+
+static void place_section_window(const char* name, const ImVec2& wanted_size)
+{
+	static int last_frame = -1;
+	static float cursor_x = 0.f;
+	static float cursor_y = 0.f;
+	static float row_height = 0.f;
+
+	const ImGuiViewport* viewport = ImGui::GetMainViewport();
+	const float margin = 18.f;
+	const float gap = 12.f;
+	const float start_x = viewport->WorkPos.x + margin;
+	const float start_y = viewport->WorkPos.y + 86.f;
+	const float right_limit = viewport->WorkPos.x + viewport->WorkSize.x - margin;
+	const float bottom_limit = viewport->WorkPos.y + viewport->WorkSize.y - margin;
+
+	const int frame = ImGui::GetFrameCount();
+	if (last_frame != frame)
+	{
+		last_frame = frame;
+		cursor_x = start_x;
+		cursor_y = start_y;
+		row_height = 0.f;
+	}
+
+	ImGuiWindow* window = ImGui::FindWindowByName(name);
+	const bool first_appearance = (window == nullptr) || (window->LastFrameActive + 1 < frame);
+
+	ImVec2 size = wanted_size;
+	if (window != nullptr && window->Size.x > 0.f && window->Size.y > 0.f)
+		size = window->Size;
+
+	if (cursor_x > start_x && cursor_x + size.x > right_limit)
+	{
+		cursor_x = start_x;
+		cursor_y += row_height + gap;
+		row_height = 0.f;
+	}
+
+	if (first_appearance)
+	{
+		float y = cursor_y;
+		if (y + size.y > bottom_limit)
+			y = (std::max)(start_y, bottom_limit - size.y);
+		ImGui::SetNextWindowPos(ImVec2(cursor_x, y), ImGuiCond_Always);
+	}
+
+	cursor_x += size.x + gap;
+	row_height = (std::max)(row_height, size.y);
+}
+
+void c_gui::render()
+{
+	static bool s_theme_initialized = false;
+	if (!s_theme_initialized)
+	{
+		Theme::ApplyTheme(settings::theme::preset);
+		s_theme_initialized = true;
+	}
+
+	playerlist::tick();
+
+	var->gui.menu_alpha = ImClamp(var->gui.menu_alpha + (gui->fixed_speed(8.f) * (var->gui.menu_opened ? 1.f : -1.f)), 0.f, 1.f);
+
+	if (var->gui.menu_alpha <= 0.01f)
+		return;
+
+	gui->set_next_window_pos(ImVec2(GetIO().DisplaySize.x / 2 - var->window.width / 2, 20));
+	gui->set_next_window_size(ImVec2(var->window.width, elements->section.size.y + var->window.spacing.y * 2 - 1));
+	gui->push_style_var(ImGuiStyleVar_Alpha, var->gui.menu_alpha);
+	gui->begin("Cortex", nullptr, var->window.main_flags);
+	{
+		const ImVec2 pos = GetWindowPos();
+		const ImVec2 size = GetWindowSize();
+		ImDrawList* draw_list = GetWindowDrawList();
+		ImGuiStyle* style = &GetStyle();
+
+		{
+			style->WindowPadding = var->window.padding;
+			style->PopupBorderSize = var->window.border_size;
+			style->WindowBorderSize = var->window.border_size;
+			style->ItemSpacing = var->window.spacing;
+			style->WindowShadowSize = var->window.shadow_size;
+			style->ScrollbarSize = var->window.scrollbar_size;
+			style->WindowRounding = var->window.rounding;
+			style->ChildRounding = var->window.child_rounding;
+			style->FrameRounding = var->window.frame_rounding;
+			style->GrabRounding = var->window.grab_rounding;
+			style->Colors[ImGuiCol_WindowShadow] = { clr->accent.Value.x, clr->accent.Value.y, clr->accent.Value.z, var->window.shadow_alpha };
+		}
+
+		{
+			draw->rect(GetBackgroundDrawList(), pos - ImVec2(1, 1), pos + size + ImVec2(1, 1), draw->get_clr({0, 0, 0, 0.5f}));
+			draw->rect_filled(draw_list, pos, pos + size, draw->get_clr(clr->window.background_one));
+			draw->line(draw_list, pos + ImVec2(1, 1), pos + ImVec2(size.x - 1, 1), draw->get_clr(clr->accent), 1);
+			draw->line(draw_list, pos + ImVec2(1, 2), pos + ImVec2(size.x - 1, 2), draw->get_clr(clr->accent, 0.4f), 1);
+			draw->rect(draw_list, pos, pos + size, draw->get_clr(clr->window.stroke));
+		}
+
+		static int s_home_subtabs = 0;
+
+		{
+			gui->set_cursor_pos(style->ItemSpacing);
+			gui->begin_group();
+			{
+				static const int dock_order[] = { 0, 1, 3, 4, 5, 6, 7, 9, 8 };
+				for (int idx : dock_order)
+				{
+					if (idx >= 0 && idx < IM_ARRAYSIZE(var->gui.current_section))
+						gui->section(var->gui.section_icons[idx], &var->gui.current_section[idx]);
+				}
+			}
+			gui->end_group();
+		}
+
+		{
+			if (var->gui.current_section[0])
+			{
+				float start_x = (GetIO().DisplaySize.x - 600.f) * 0.5f;
+				float start_y = 65.f;
+				gui->set_next_window_pos(ImVec2(start_x, start_y), ImGuiCond_Once);
+				gui->set_next_window_size(ImVec2(600, 645), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(600, 700), GetIO().DisplaySize);
+				gui->begin("Home", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+
+					{
+						int& subtabs = s_home_subtabs;
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar));
+						gui->begin_group();
+						{
+							gui->sub_section("Assist", 0, subtabs, 4);
+							gui->sub_section("Players", 1, subtabs, 4);
+							gui->sub_section("Lightning", 2, subtabs, 4);
+							gui->sub_section("Exploits", 3, subtabs, 4);
+						}
+						gui->end_group();
+
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + elements->section.height - 1));
+						gui->begin_content();
+						{
+							if (subtabs == 0)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Aimbot", 2, 1);
+									{
+										gui->checkbox("Enabled", &settings::aimbot::enabled, &settings::aimbot::keybind, &settings::aimbot::activation_mode);
+										gui->dropdown("Aim Mode", &settings::aimbot::mode, aim_modes, IM_ARRAYSIZE(aim_modes));
+										gui->dropdown("Target Part", &settings::aimbot::target_part, target_parts, IM_ARRAYSIZE(target_parts));
+										gui->dropdown("Air Target Part", &settings::aimbot::air_part, target_parts, IM_ARRAYSIZE(target_parts));
+										if (settings::aimbot::mode == 0)
+										{
+											gui->slider_float("Mouse Sensitivity", &settings::aimbot::mouse_sensitivity, 0.f, 10.f);
+										}
+										gui->slider_float("Fov", &settings::aimbot::fov, 0.f, 600.f);
+										gui->checkbox("Sticky Aim", &settings::aimbot::sticky_aim);
+										gui->checkbox("Dynamic Fov", &settings::aimbot::dynamic_fov);
+										gui->checkbox("Draw Fov", &settings::aimbot::draw_fov, settings::aimbot::fov_circle_colour);
+										gui->checkbox("Fill Fov", &settings::aimbot::fill_fov, settings::aimbot::fov_fill_colour);
+										gui->checkbox("Smoothness", &settings::aimbot::smoothing);
+										if (settings::aimbot::smoothing)
+										{
+											gui->slider_float("Smoothing X", &settings::aimbot::smoothingx, 1.f, 100.f);
+											gui->slider_float("Smoothing Y", &settings::aimbot::smoothingy, 1.f, 100.f);
+										}
+										gui->checkbox("Prediction", &settings::aimbot::enable_prediction);
+										if (settings::aimbot::enable_prediction)
+										{
+											gui->slider_float("Prediction X", &settings::aimbot::prediction_x, 0.f, 100.f);
+											gui->slider_float("Prediction Y", &settings::aimbot::prediction_y, 0.f, 100.f);
+										}
+										gui->checkbox("Team Check", &settings::aimbot::teamcheck);
+
+										gui->checkbox("Universal Teamcheck", &settings::teamcheck);
+										gui->checkbox("Knock Check", &settings::aimbot::knock_check);
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+
+								gui->sameline();
+
+								gui->begin_group();
+								{
+									gui->begin_child("Silent Aim", 2, 2);
+									{
+										gui->checkbox("Enabled", &settings::silentaim::enabled, &settings::silentaim::keybind, &settings::silentaim::activation_mode);
+										gui->dropdown("Method", &settings::silentaim::method, silentaim_methods, IM_ARRAYSIZE(silentaim_methods));
+										gui->dropdown("Target Bone", &settings::silentaim::target_part, target_parts, IM_ARRAYSIZE(target_parts));
+										if (settings::silentaim::method == 0)
+										{
+											gui->checkbox("360 Mode", &settings::raycast_silentaim::mode_360, &settings::raycast_silentaim::mode_360_keybind, &settings::raycast_silentaim::mode_360_activation_mode);
+											gui->checkbox("Wallbang", &settings::raycast_silentaim::magic_bullet, &settings::raycast_silentaim::magic_bullet_keybind, &settings::raycast_silentaim::magic_bullet_activation_mode);
+											if (settings::raycast_silentaim::magic_bullet)
+											{
+												static const char* wb_methods[] = { "Engine", "Position" };
+												gui->dropdown("Wallbang Method", &settings::raycast_silentaim::magic_bullet_method, wb_methods, IM_ARRAYSIZE(wb_methods));
+											}
+										}
+										gui->slider_float("Fov", &settings::silentaim::fov, 0.f, 1000.f);
+										gui->checkbox("Draw Fov", &settings::silentaim::draw_fov, settings::silentaim::fov_circle_colour);
+										gui->checkbox("Fill Fov", &settings::silentaim::fill_fov, settings::silentaim::fov_fill_colour);
+										gui->checkbox("Snapline", &settings::silentaim::snapline, settings::silentaim::snapline_colour);
+										gui->checkbox("Team Check", &settings::silentaim::teamcheck);
+										gui->checkbox("Gun Check", &settings::silentaim::guncheck);
+										gui->checkbox("Knock Check", &settings::silentaim::knock_check);
+										gui->checkbox("Forcefield Check", &settings::silentaim::forcefield_check);
+									}
+									gui->end_child();
+
+									gui->begin_child("Triggerbot", 2, 2);
+									{
+										gui->checkbox("Triggerbot", &settings::triggerbot::enabled, &settings::triggerbot::keybind, &settings::triggerbot::activation_mode);
+										gui->dropdown("TriggerBot Part", &settings::triggerbot::target_part, target_parts, IM_ARRAYSIZE(target_parts));
+										gui->slider_float("Delay", &settings::triggerbot::delay_ms, 0.f, 500.f, false, "%.0fms");
+										gui->slider_float("Cooldown", &settings::triggerbot::cooldown_ms, 0.f, 1000.f, false, "%.0fms");
+										gui->checkbox("Team Check", &settings::triggerbot::teamcheck);
+										gui->checkbox("Wall Check", &settings::triggerbot::wallcheck);
+										gui->checkbox("Knock Check", &settings::triggerbot::knock_check);
+										gui->checkbox("Gun Check", &settings::triggerbot::guncheck);
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (subtabs == 1)
+							{
+								float total_h = GetWindowHeight() - elements->content.padding.y * 2.f - elements->content.spacing.y;
+								float h_top = std::round(total_h * 0.58f);
+								float h_bot = total_h - h_top;
+
+								gui->begin_group();
+								{
+									ImGuiID visuals_id = GetCurrentWindow()->GetID("Visuals Options");
+
+									gui->begin_multi_subtab(
+										"Visuals Options",
+										2,
+										1,
+										3,
+										ImVec2(0, h_top),
+										{ "Enemies", "Friendlies", "Client" }
+									);
+									{
+										int vis_subtab = gui->get_child_subtab(visuals_id);
+										settings::visuals::priority_settings_t* cur_settings = (vis_subtab == 0)
+											? &settings::visuals::hostile
+											: ((vis_subtab == 1) ? &settings::visuals::friendly : &settings::visuals::neutral);
+
+										gui->checkbox("Enable", &settings::visuals::enabled, &settings::visuals::keybind, &settings::visuals::activation_mode);
+
+										gui->checkbox("Box", &cur_settings->box, cur_settings->colour);
+										if (cur_settings->box)
+										{
+											gui->dropdown("Box Type", &cur_settings->box_type, box_types, IM_ARRAYSIZE(box_types));
+											if (cur_settings->box_type == 0)
+											{
+												gui->slider_float("Corner Length", &cur_settings->corner_box_length, 0.1f, 1.0f, false, "%.2f");
+											}
+											gui->checkbox("Box Inline", &cur_settings->box_inline);
+
+											gui->checkbox("Box Gradient", &cur_settings->box_gradient, cur_settings->colour, cur_settings->box_colour_mid, cur_settings->box_colour_low);
+											if (cur_settings->box_gradient)
+											{
+												const char* gradient_styles[] = { "Vertical", "Horizontal", "Pulse" };
+												gui->dropdown("Gradient Style", &cur_settings->box_gradient_type, gradient_styles, IM_ARRAYSIZE(gradient_styles));
+												if (cur_settings->box_gradient_type == 2)
+												{
+													gui->slider_float("Pulse Speed", &cur_settings->box_pulse_speed, 0.1f, 10.0f, false, "%.1fx");
+												}
+											}
+
+											gui->checkbox("Box Filled", &cur_settings->box_fill, cur_settings->box_fill_colour);
+											if (cur_settings->box_fill)
+											{
+												gui->checkbox("Fill Gradient", &cur_settings->box_fill_gradient, cur_settings->box_fill_colour, cur_settings->box_fill_colour_mid, cur_settings->box_fill_colour_low);
+												if (cur_settings->box_fill_gradient)
+												{
+													const char* gradient_styles[] = { "Side-to-Side", "Bottom-to-Top", "Pulse" };
+													gui->dropdown("Gradient Style ", &cur_settings->box_fill_gradient_type, gradient_styles, IM_ARRAYSIZE(gradient_styles));
+													if (cur_settings->box_fill_gradient_type == 2)
+													{
+														gui->slider_float("Pulse Speed ", &cur_settings->box_fill_pulse_speed, 0.1f, 10.0f, false, "%.1fx");
+													}
+													gui->checkbox("Gradient Spin", &cur_settings->box_fill_gradient_spin);
+													if (cur_settings->box_fill_gradient_spin)
+													{
+														gui->slider_float("Spin Speed", &cur_settings->box_fill_gradient_speed, 0.1f, 10.0f, false, "%.1fx");
+													}
+												}
+											}
+											gui->slider_float("Box Thickness", &settings::visuals::box_thickness, 0.5f, 5.0f);
+										}
+
+										gui->checkbox("Name", &cur_settings->username, cur_settings->username_colour);
+										if (cur_settings->username)
+										{
+											static const char* const name_modes[] = { "Display Name", "Username", "Both" };
+											gui->dropdown("Name Mode", &cur_settings->username_type, name_modes, IM_ARRAYSIZE(name_modes));
+
+											static const char* const name_positions[] = { "Top", "Bottom", "Left", "Right" };
+											gui->dropdown("Name Position", &cur_settings->username_position, name_positions, IM_ARRAYSIZE(name_positions));
+
+											static const char* const name_transforms[] = { "None", "Uppercase", "Lowercase" };
+											gui->dropdown("Name Transform", &cur_settings->name_transform, name_transforms, IM_ARRAYSIZE(name_transforms));
+
+											gui->checkbox("Name Gradient", &cur_settings->username_gradient, cur_settings->username_colour_two);
+											if (cur_settings->username_gradient)
+											{
+												static const char* const name_grad_types[] = { "Wave", "Rainbow", "Left to Right" };
+												gui->dropdown("Gradient Style##name_grad", &cur_settings->username_gradient_type, name_grad_types, IM_ARRAYSIZE(name_grad_types));
+												gui->slider_float("Gradient Speed##name_grad_spd", &cur_settings->username_gradient_speed, 0.5f, 10.0f, false, "%.1fx");
+											}
+										}
+
+										gui->checkbox("Distance", &cur_settings->distance, cur_settings->distance_colour);
+										gui->checkbox("Held Tool", &cur_settings->tool, cur_settings->tool_colour);
+
+										gui->checkbox("Health Bar", &cur_settings->healthbar, cur_settings->healthbar_colour, cur_settings->healthbar_colour_mid, cur_settings->healthbar_colour_low);
+										if (cur_settings->healthbar)
+										{
+											gui->dropdown("Position", &cur_settings->healthbar_style, healthbar_positions, IM_ARRAYSIZE(healthbar_positions));
+											gui->slider_float("Padding", &cur_settings->healthbar_padding, 0.f, 20.f);
+											gui->checkbox("Health Text", &cur_settings->healthbar_text, cur_settings->healthbar_text_colour);
+											gui->checkbox("Value Follow", &cur_settings->value_follow);
+											gui->checkbox("Health Lerp", &cur_settings->healthbar_lerp);
+											gui->checkbox("Ignore Full HP", &cur_settings->ignore_full);
+											gui->checkbox("Bar Fold", &cur_settings->bar_fold);
+											gui->checkbox("Bar Fill", &settings::visuals::bar_fill, settings::visuals::bar_fill_colour);
+											gui->dropdown("Gradient Style", &cur_settings->healthbar_gradient_type, healthbar_gradients, IM_ARRAYSIZE(healthbar_gradients));
+											if (cur_settings->healthbar_gradient_type == 2)
+											{
+												gui->slider_float("Pulse Speed", &cur_settings->healthbar_pulse_speed, 0.5f, 5.0f);
+											}
+											gui->slider_float("Health Bar Thickness", &settings::visuals::healthbar_thickness, 1.0f, 6.0f);
+										}
+
+										gui->checkbox("Tracers", &cur_settings->tracers, cur_settings->tracers_colour);
+										if (cur_settings->tracers)
+										{
+											gui->dropdown("Tracers Origin", &cur_settings->tracers_origin, tracer_origins, IM_ARRAYSIZE(tracer_origins));
+											gui->slider_float("Tracer Thickness", &cur_settings->tracers_thickness, 0.5f, 5.0f);
+										}
+
+										gui->checkbox("Skeleton", &cur_settings->skeleton, cur_settings->skeleton_colour, cur_settings->skeleton_outline_colour);
+										if (cur_settings->skeleton)
+										{
+											gui->slider_float("Skeleton Thickness", &settings::visuals::skeleton_thickness, 0.5f, 5.0f);
+										}
+
+										gui->checkbox("Offscreen Arrows", &cur_settings->offscreen_arrows, cur_settings->offscreen_arrows_colour, cur_settings->arrows_glow_colour);
+										if (cur_settings->offscreen_arrows)
+										{
+											const char* arrow_types[] = { "Normal", "Flat" };
+											gui->dropdown("Arrow Type", &cur_settings->arrow_type, arrow_types, IM_ARRAYSIZE(arrow_types));
+											const char* arrow_modes[] = { "Screen Center", "Mouse Position" };
+											gui->dropdown("Arrow Mode", &cur_settings->arrow_mode, arrow_modes, IM_ARRAYSIZE(arrow_modes));
+											const char* arrow_info_labels[] = { "Name", "Distance" };
+											gui->multi_dropdown("Arrow Info", cur_settings->arrows_info, arrow_info_labels, IM_ARRAYSIZE(arrow_info_labels));
+											gui->checkbox("Arrows Glow", &cur_settings->arrows_glow);
+											gui->slider_float("Arrow Radius", &cur_settings->offscreen_arrows_radius, 50.f, 400.f);
+											gui->slider_float("Arrow Size", &cur_settings->offscreen_arrows_size, 5.f, 30.f);
+										}
+
+										gui->checkbox("Chams", &cur_settings->chams, cur_settings->chams_colour);
+
+										gui->checkbox("Native Chams", &cur_settings->native, settings::visuals::native_render_col);
+										gui->checkbox("Engine Chams", &settings::visuals::engine_chams);
+										const bool native_panel = cur_settings->native;
+										const bool engine_panel = settings::visuals::engine_chams;
+										if (cur_settings->chams || engine_panel || native_panel)
+										{
+											if (cur_settings->chams)
+												gui->dropdown("Chams Type", &cur_settings->chams_type, chams_types, IM_ARRAYSIZE(chams_types));
+											if (cur_settings->chams && cur_settings->chams_type == 1)
+											{
+												static const char* nazi_style_names[] = { "Imgui", "Dx" };
+												gui->dropdown("Mesh Style", &settings::visuals::mesh_chams_style, nazi_style_names, IM_ARRAYSIZE(nazi_style_names));
+												if (settings::visuals::mesh_chams_style == 1)
+												{
+													gui->dropdown("DX Mode", &settings::visuals::mesh_chams_dx_mode,
+														Cheat::Visuals::MeshDxShader::ModeNames(), Cheat::Visuals::MeshDxShader::ModeNameCount());
+												}
+												gui->checkbox("Occluded", &settings::visuals::mesh_chams_occlusion, settings::visuals::mesh_chams_occluded_color);
+												if (settings::visuals::mesh_chams_occlusion)
+												{
+													gui->dropdown("Occluded Mode", &settings::visuals::mesh_chams_occluded_dx_mode,
+														Cheat::Visuals::MeshDxShader::ModeNames(), Cheat::Visuals::MeshDxShader::ModeNameCount());
+												}
+												gui->checkbox("Outline", &settings::visuals::mesh_chams_outline, settings::visuals::mesh_chams_outline_color);
+												if (settings::visuals::mesh_chams_outline)
+												{
+													gui->dropdown("Outline Style", &settings::visuals::mesh_chams_outline_style,
+														Cheat::Visuals::MeshChams::OutlineStyleNames(), Cheat::Visuals::MeshChams::OutlineStyleNameCount());
+													gui->slider_float("Outline Fade", &settings::visuals::mesh_chams_outline_fade, 0.35f, 2.0f);
+												}
+											}
+											if (engine_panel || (cur_settings->chams && cur_settings->chams_type == 2))
+											{
+												static const char* engine_chams_styles[] = { "Wireframe Normal", "Wireframe Textured", "Character Wireframe", "Character Mesh" };
+												gui->dropdown("Engine Style", &settings::visuals::engine_chams_style, engine_chams_styles, IM_ARRAYSIZE(engine_chams_styles));
+
+												static const char* engine_chams_modes[] = { "Glow", "Invisible", "Always On Top" };
+												gui->dropdown("Engine Mode", &settings::visuals::engine_chams_mode, engine_chams_modes, IM_ARRAYSIZE(engine_chams_modes));
+
+												static const char* engine_chams_colors[] = {
+													"White", "Red", "Green", "Blue", "Yellow", "Cyan", "Magenta", "Orange",
+													"Purple", "Pink", "Lime", "Aqua", "Gold", "Violet", "Teal", "Crimson",
+													"Navy", "Emerald", "Coral", "Silver"
+												};
+												gui->dropdown("Engine Color", &settings::visuals::engine_chams_color_index, engine_chams_colors, IM_ARRAYSIZE(engine_chams_colors));
+												gui->checkbox("Weapon & Arms", &settings::visuals::engine_chams_weapons);
+												if (settings::visuals::engine_chams_weapons)
+												{
+													gui->dropdown("Weapon Style", &settings::visuals::engine_chams_weapons_style, engine_chams_styles, IM_ARRAYSIZE(engine_chams_styles));
+													gui->dropdown("Weapon Mode", &settings::visuals::engine_chams_weapons_mode, engine_chams_modes, IM_ARRAYSIZE(engine_chams_modes));
+													gui->dropdown("Weapon Color", &settings::visuals::engine_chams_weapons_color_index, engine_chams_colors, IM_ARRAYSIZE(engine_chams_colors));
+												}
+											}
+											if (native_panel || (cur_settings->chams && cur_settings->chams_type == 3))
+											{
+												gui->dropdown("Native Shader", &settings::visuals::native_render_shader,																					nativechams::ShaderNames(), nativechams::ShaderNameCount());
+																				gui->checkbox("Native Glow", &settings::visuals::native_glow, settings::visuals::native_glow_col);																			if (settings::visuals::native_glow)
+																			{
+																				gui->slider_float("Glow Strength", &settings::visuals::native_glow_strength, 0.0f, 2.0f);
+																			}
+																	gui->checkbox("Through Walls", &settings::visuals::native_walls);
+																	gui->slider_float("Depth", &settings::visuals::native_depth, 0.0f, 1.0f);
+																	gui->checkbox("Team Check", &settings::visuals::native_teamcheck);
+
+											}
+											if (cur_settings->chams && cur_settings->chams_type == 4)
+											{
+												gui->checkbox("Through Walls", &settings::visuals::highlight_through_walls);
+												gui->checkbox("Outline", &settings::visuals::highlight_outline, cur_settings->chams_outline_colour);
+												ImGui::Spacing();
+												const bool chams_on = cur_settings->chams && cur_settings->chams_type == 4;
+												const bool attached = memory && memory->is_attached();
+												if (!chams_on)
+												{
+													ImGui::TextDisabled("Status: disabled (enable Chams checkbox)");
+												}
+												else if (!attached)
+												{
+													ImGui::TextDisabled("Status: waiting for game (Roblox not attached)");
+												}
+												else
+												{
+													ImGui::TextDisabled("Status: %s (%zu entities, %zu players)", highlightchams::StatusString(), highlightchams::GetEntityCount(), highlightchams::GetPlayerCount());
+												}
+											}
+											else
+											{
+												gui->checkbox("Chams Outline", &cur_settings->mesh_outline, cur_settings->chams_outline_colour);
+												if (cur_settings->mesh_outline)
+												{
+													gui->slider_float("Outline Thickness", &cur_settings->mesh_outline_thickness, 0.5f, 6.0f);
+												}
+												gui->checkbox("Outline Glow", &cur_settings->chams_outline_glow, cur_settings->chams_glow_colour);
+												if (cur_settings->chams_outline_glow)
+												{
+													gui->slider_float("Glow Radius", &cur_settings->chams_glow_radius, 1.0f, 20.0f);
+													gui->slider_float("Glow Intensity", &cur_settings->chams_glow_intensity, 1.0f, 100.0f, false, "%.0f%%");
+												}
+												gui->slider_float("Chams Thickness", &settings::visuals::chams_thickness, 0.0f, 5.0f);
+											}
+										}
+									}
+									gui->end_child();
+
+									gui->begin_child("Misc", 2, 1, ImVec2(0, h_bot));
+									{
+										int vis_subtab = gui->get_child_subtab(visuals_id);
+										settings::visuals::priority_settings_t* cur_settings = (vis_subtab == 0)
+											? &settings::visuals::hostile
+											: ((vis_subtab == 1) ? &settings::visuals::friendly : &settings::visuals::neutral);
+
+										std::vector<int> flags_val = { cur_settings->state_flags ? 1 : 0, cur_settings->rig_flags ? 1 : 0 };
+										const char* flag_labels[] = { "State", "Rig" };
+										gui->multi_dropdown("Flags", flags_val, flag_labels, IM_ARRAYSIZE(flag_labels));
+										cur_settings->state_flags = (flags_val[0] == 1);
+										cur_settings->rig_flags = (flags_val[1] == 1);
+
+										gui->checkbox("Head Dot", &cur_settings->head_dot, cur_settings->head_dot_colour, cur_settings->head_dot_outline_colour);
+										if (cur_settings->head_dot)
+										{
+											const char* head_types[] = { "Dot", "Hexagon" };
+											gui->dropdown("Head Type", &cur_settings->head_type, head_types, IM_ARRAYSIZE(head_types));
+											gui->checkbox("Circular Dot", &cur_settings->circular_head_dot);
+											gui->slider_float("Dot Size", &cur_settings->head_dot_size, 1.f, 10.f);
+										}
+
+										gui->checkbox("Corpse Chams", &cur_settings->corpse, cur_settings->corpse_colour, cur_settings->corpse_outline_colour);
+										if (cur_settings->corpse)
+										{
+											gui->slider_float("Corpse Shift", &settings::visuals::corpse_shift, -10.f, 10.f, false, "%.1f studs");
+											gui->slider_float("Corpse Max Dist", &settings::visuals::corpse_max_dist, 50.f, 5000.f, false, "%.0f studs");
+										}
+										gui->checkbox("Corpse Names", &cur_settings->corpse_names, cur_settings->corpse_names_colour);
+
+										gui->checkbox("View Angles", &cur_settings->view_angle_lines, cur_settings->view_angle_lines_colour);
+										if (cur_settings->view_angle_lines)
+										{
+											gui->slider_float("Line Thickness", &cur_settings->view_angle_lines_thickness, 0.1f, 5.0f, false, "%.1fpx");
+											gui->slider_float("Line Length", &cur_settings->view_angle_lines_length, 1.0f, 100.0f, false, "%.0f studs");
+										}
+
+										gui->checkbox("Sound", &cur_settings->sound_esp, cur_settings->sound_esp_colour);
+										if (cur_settings->sound_esp)
+										{
+											gui->slider_float("Sound Radius", &cur_settings->sound_esp_radius, 1.f, 25.f);
+											gui->slider_float("Sound Speed", &cur_settings->sound_esp_speed, 0.1f, 5.0f);
+										}
+
+										gui->checkbox("Footprints", &cur_settings->footprints, cur_settings->footprints_colour);
+										if (cur_settings->footprints)
+										{
+											gui->checkbox("Footprints Glow", &cur_settings->footprints_glow);
+											gui->slider_float("Footprint Radius", &cur_settings->footprints_radius, 1.f, 10.f);
+											gui->slider_float("Footprint Interval", &cur_settings->footprints_speed, 0.1f, 5.0f);
+										}
+
+										gui->checkbox("Movement Trails", &cur_settings->movement_trails, cur_settings->movement_trails_colour);
+										if (cur_settings->movement_trails)
+										{
+											gui->slider_float("Trail Thickness", &cur_settings->movement_trails_thickness, 0.1f, 10.0f, false, "%.1fpx");
+											gui->slider_float("Trail Length", &cur_settings->movement_trails_length, 0.1f, 10.0f, false, "%.1fs");
+										}
+
+										gui->checkbox("Radar", &cur_settings->radar);
+										if (cur_settings->radar)
+										{
+											const char* radar_positions[] = { "Top Left", "Top Right", "Bottom Left", "Bottom Right", "Custom" };
+											gui->dropdown("Position", &cur_settings->radar_position, radar_positions, IM_ARRAYSIZE(radar_positions));
+											gui->slider_float("Size", &cur_settings->radar_size, 100.f, 400.f);
+											gui->slider_float("Range", &cur_settings->radar_range, 50.f, 2000.f);
+											gui->checkbox("Show Enemies", &cur_settings->radar_show_enemies);
+											gui->checkbox("Show Friendlies", &cur_settings->radar_show_friendlies);
+											gui->checkbox("Show Local", &cur_settings->radar_show_local);
+											gui->checkbox("Crosshair", &cur_settings->radar_crosshair);
+											gui->checkbox("Names", &cur_settings->radar_names);
+											gui->label_color_edit("Enemy Color", cur_settings->radar_enemy_colour);
+											gui->label_color_edit("Friendly Color", cur_settings->radar_friendly_colour);
+											gui->label_color_edit("Local Color", cur_settings->radar_local_colour);
+											gui->label_color_edit("Background", cur_settings->radar_background_colour);
+											gui->label_color_edit("Border", cur_settings->radar_border_colour);
+											gui->label_color_edit("Crosshair Color", cur_settings->radar_crosshair_colour);
+											gui->label_color_edit("Name Color", cur_settings->radar_name_colour);
+										}
+
+										gui->checkbox("Bullet Tracers", &cur_settings->bullet_tracers);
+										if (cur_settings->bullet_tracers)
+										{
+											const char* tracer_styles[] = { "Line", "Outlined", "Fade" };
+											gui->dropdown("Style", &cur_settings->bullet_tracer_style, tracer_styles, IM_ARRAYSIZE(tracer_styles));
+											gui->slider_float("Duration", &cur_settings->bullet_tracer_duration, 0.5f, 10.f);
+											gui->slider_float("Thickness", &cur_settings->bullet_tracer_thickness, 1.f, 5.f);
+											gui->checkbox("Show Enemy", &cur_settings->bullet_tracer_show_enemy);
+											gui->checkbox("Show Local", &cur_settings->bullet_tracer_show_local);
+											gui->label_color_edit("Local Color", cur_settings->bullet_tracer_colour);
+											gui->label_color_edit("Enemy Color", cur_settings->bullet_tracer_enemy_colour);
+										}
+
+										gui->checkbox("Material Changer", &settings::materialchanger::enabled);
+										if (settings::materialchanger::enabled)
+										{
+											static const char* material_names[] = {
+												"ForceField", "Neon", "Glass", "Plastic", "SmoothPlastic",
+												"Foil", "Ice", "Metal", "CorrodedMetal", "DiamondPlate",
+												"Wood", "WoodPlanks", "Marble", "Slate", "Concrete",
+												"Granite", "Brick", "Pebble", "Cobblestone", "Sand", "Fabric"
+											};
+											gui->dropdown("Material", &settings::materialchanger::material_index, material_names, IM_ARRAYSIZE(material_names));
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+
+								gui->sameline();
+
+								gui->begin_group();
+								{
+									gui->begin_child("Other", 2, 1);
+									{
+										gui->checkbox("Esp Preview", &var->gui.viewer_open);
+										gui->checkbox("Anti-Aliasing", &settings::visuals::anti_aliasing);
+										gui->checkbox("Enemy Highlight", &settings::visuals::enemy_highlight, settings::visuals::enemy_highlight_colour);
+										gui->checkbox("Friendly Highlight", &settings::visuals::friendly_highlight, settings::visuals::friendly_highlight_colour);
+										gui->checkbox("Team Check", &settings::visuals::teamcheck);
+										gui->checkbox("Universal Teamcheck", &settings::teamcheck);
+										gui->checkbox("Visible Check", &settings::visuals::visible_check);
+										gui->checkbox("Knock Check", &settings::visuals::knock_check);
+										gui->checkbox("Alive Check", &settings::visuals::alive_check);
+										gui->checkbox("Ragdoll Check", &settings::visuals::ragdoll_check);
+										gui->checkbox("Local Check", &settings::visuals::local_player);
+										gui->checkbox("Tool Check", &settings::visuals::tool_check);
+										gui->checkbox("Godded Check", &settings::visuals::godded_check);
+										gui->checkbox("Forcefield Check", &settings::visuals::forcefield_check);
+										gui->checkbox("Ignore Full Health", &settings::visuals::ignore_full_health);
+										gui->checkbox("Static On Death", &settings::visuals::static_on_death);
+										gui->checkbox("Static On Void", &settings::visuals::static_on_void);
+										gui->checkbox("Show None", &settings::visuals::show_none);
+										gui->checkbox("Sort By Status", &settings::visuals::sort_by_status);
+										gui->checkbox("Use Display Name", &settings::visuals::use_display_name);
+										gui->checkbox("Combined Name", &settings::visuals::combined_name);
+										if (memory && memory->is_attached() && game::datamodel && game::datamodel->address != 0 && game::datamodel->is_mm2())
+										{
+											gui->checkbox("Mm2 Role", &settings::mm2::role_esp);
+											gui->checkbox("Mm2 Coin", &settings::mm2::coin_esp);
+										}
+
+										const char* outline_labels[] = { "Skeleton", "Box", "Name", "Health Bar", "Health Text", "Held Item", "Tracers", "Head Dot", "Distance" };
+										gui->multi_dropdown("Render Outlines", settings::visuals::render_outlines, outline_labels, IM_ARRAYSIZE(outline_labels));
+
+										const char* global_outline_types[] = { "None", "Outline", "Shadow" };
+										gui->dropdown("Global Outline Type", &settings::visuals::global_outline_type, global_outline_types, IM_ARRAYSIZE(global_outline_types));
+										gui->slider_float("Text Outline Thickness", &settings::visuals::text_outline_thickness, 0.5f, 5.0f);
+
+										gui->checkbox("Distance Limit", &settings::visuals::distance_check);
+										if (settings::visuals::distance_check)
+										{
+											gui->slider_float("Max Distance", &settings::visuals::max_distance, 50.f, 5000.f, false, "%.0f studs");
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (subtabs == 2)
+							{
+								float total_h = GetWindowHeight() - elements->content.padding.y * 2.f - elements->content.spacing.y;
+								float h_top = std::round(total_h * 0.58f);
+								float h_bot = total_h - h_top;
+
+								gui->begin_group();
+								{
+									gui->begin_child("World", 2, 1, ImVec2(0, h_top));
+									{
+										gui->checkbox("Field of View", &cheat::world_settings->custom_fov);
+										if (cheat::world_settings->custom_fov)
+										{
+											gui->slider_float("Field of View", &cheat::world_settings->custom_fov_value, 30.f, 120.f, false, "%.0f");
+										}
+										gui->checkbox("Custom ClockTime", &cheat::world_settings->clock_time_enabled);
+										if (cheat::world_settings->clock_time_enabled)
+										{
+											gui->slider_float("Clock Time", &cheat::world_settings->clock_time_value, 0.f, 24.f, false, "%.1fh");
+										}
+										gui->checkbox("Custom Ambient", &cheat::world_settings->ambient_enabled, cheat::world_settings->ambient_color);
+										if (cheat::world_settings->ambient_enabled)
+										{
+											gui->label_color_edit("Outdoor Color", cheat::world_settings->outdoor_ambient_color);
+										}
+										gui->checkbox("Custom Fog", &cheat::world_settings->fog_enabled, cheat::world_settings->fog_color);
+										if (cheat::world_settings->fog_enabled)
+										{
+											gui->slider_float("Fog Start", &cheat::world_settings->fog_start, 0.f, 1000.f);
+											gui->slider_float("Fog End", &cheat::world_settings->fog_end, 0.f, 3000.f);
+										}
+										gui->checkbox("Disable Shadows", &cheat::world_settings->shadows_enabled_toggle);
+										gui->checkbox("Exposure", &cheat::world_settings->exposure_enabled);
+										if (cheat::world_settings->exposure_enabled)
+										{
+											gui->slider_float("Exposure Level", &cheat::world_settings->exposure_value, -5.f, 5.f);
+										}
+										gui->checkbox("Atmosphere", &cheat::world_settings->atmosphere_enabled, cheat::world_settings->atmosphere_color);
+										if (cheat::world_settings->atmosphere_enabled)
+										{
+											gui->label_color_edit("Decay Color", cheat::world_settings->atmosphere_decay);
+											gui->slider_float("Density", &cheat::world_settings->atmosphere_density, 0.f, 1.f);
+										}
+										gui->checkbox("Bloom Effect", &cheat::world_settings->bloom_enabled);
+										if (cheat::world_settings->bloom_enabled)
+										{
+											gui->slider_float("Bloom Intensity", &cheat::world_settings->bloom_intensity, 0.f, 5.f);
+											gui->slider_float("Bloom Size", &cheat::world_settings->bloom_size, 0.f, 50.f);
+											gui->slider_float("Bloom Threshold", &cheat::world_settings->bloom_threshold, 0.f, 4.f);
+										}
+										gui->checkbox("Blur Effect", &cheat::world_settings->blur_enabled);
+										if (cheat::world_settings->blur_enabled)
+										{
+											gui->slider_float("Blur Size", &cheat::world_settings->blur_size, 0.f, 55.f);
+										}
+										gui->checkbox("Color Correction", &cheat::world_settings->color_correction_enabled, cheat::world_settings->cc_tint);
+										if (cheat::world_settings->color_correction_enabled)
+										{
+											gui->slider_float("Brightness", &cheat::world_settings->cc_brightness, -1.f, 1.f);
+											gui->slider_float("Contrast", &cheat::world_settings->cc_contrast, -1.f, 1.f);
+										}
+										gui->checkbox("Depth Of Field", &cheat::world_settings->depth_of_field_enabled);
+										if (cheat::world_settings->depth_of_field_enabled)
+										{
+											gui->slider_float("Focus Distance", &cheat::world_settings->dof_focus_distance, 0.f, 500.f);
+											gui->slider_float("In Focus Radius", &cheat::world_settings->dof_in_focus_radius, 0.f, 500.f);
+											gui->slider_float("Near Intensity", &cheat::world_settings->dof_near_intensity, 0.f, 1.f);
+											gui->slider_float("Far Intensity", &cheat::world_settings->dof_far_intensity, 0.f, 1.f);
+										}
+									}
+									gui->end_child();
+
+									gui->begin_child("Lock Lightning", 2, 1, ImVec2(0, h_bot));
+									{
+										gui->checkbox("Lock Lightning", &cheat::world_settings->lock_lighting, true);
+										if (cheat::world_settings->lock_lighting)
+										{
+											if (gui->button("Update Baseline", 1))
+											{
+												cheat::world_feature->capture_lock_baseline();
+											}
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+
+								gui->sameline();
+
+								gui->begin_group();
+								{
+									gui->begin_child("Other World", 2, 1);
+									{
+										gui->checkbox("Skybox Shader", &cheat::world_settings->sky_shader_enabled);
+										if (cheat::world_settings->sky_shader_enabled)
+										{
+											gui->dropdown("Sky Shader", &cheat::world_settings->sky_shader_mode, sky_shader_modes, IM_ARRAYSIZE(sky_shader_modes));
+											gui->checkbox("Sky Tint", &cheat::world_settings->sky_shader_tint, cheat::world_settings->sky_shader_tint_color);
+											gui->checkbox("Pause Sky", &cheat::world_settings->sky_shader_paused);
+										}
+
+										const auto& clean_names = Cheat::Features::HitSoundsData::GetCleanNamesVector();
+
+										gui->checkbox("Hitsound Effects", &settings::hitsounds::enabled);
+										if (settings::hitsounds::enabled)
+										{
+											if (!clean_names.empty())
+											{
+												gui->dropdown("Hit Sound Preset", &settings::hitsounds::type, clean_names.data(), static_cast<int>(clean_names.size()));
+											}
+											gui->slider_float("Hit Sound Volume", &settings::hitsounds::volume, 0.f, 1.f);
+											if (settings::hitsounds::type == 0)
+											{
+												if (gui->button("Browse File##HitSoundBrowse", 1))
+												{
+													select_sound_file(settings::hitsounds::custom_path, sizeof(settings::hitsounds::custom_path));
+												}
+												gui->text_field("Hit Sound Path", settings::hitsounds::custom_path, sizeof(settings::hitsounds::custom_path));
+											}
+										}
+
+										gui->checkbox("Killsound Effects", &settings::killsounds::enabled);
+										if (settings::killsounds::enabled)
+										{
+											if (!clean_names.empty())
+											{
+												gui->dropdown("Kill Sound Preset", &settings::killsounds::type, clean_names.data(), static_cast<int>(clean_names.size()));
+											}
+											gui->slider_float("Kill Sound Volume", &settings::killsounds::volume, 0.f, 1.f);
+											if (settings::killsounds::type == 0)
+											{
+												if (gui->button("Browse File##KillSoundBrowse", 1))
+												{
+													select_sound_file(settings::killsounds::custom_path, sizeof(settings::killsounds::custom_path));
+												}
+												gui->text_field("Kill Sound Path", settings::killsounds::custom_path, sizeof(settings::killsounds::custom_path));
+											}
+										}
+
+										gui->checkbox("Hitmarkers", &settings::raycast_silentaim::hitmarkers, settings::raycast_silentaim::hitmarker_colour);
+										if (settings::raycast_silentaim::hitmarkers)
+										{
+											gui->slider_float("Hitmarker Size", &settings::raycast_silentaim::hitmarker_size, 2.f, 20.f);
+											gui->slider_float("Hitmarker Gap", &settings::raycast_silentaim::hitmarker_gap, 1.f, 15.f);
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (subtabs == 3)
+							{
+								gui->begin_group();
+								{
+									ImGuiID exploits_subtab_id = GetCurrentWindow()->GetID("Exploits Options");
+									gui->begin_multi_subtab(
+										"Exploits Options",
+										2,
+										1,
+										3,
+										ImVec2(0, 35),
+										{ "Movement", "Remote Spy", "Instance Dumper" }
+									);
+									{
+										int exploits_subtab = gui->get_child_subtab(exploits_subtab_id);
+										if (exploits_subtab == 0)
+										{
+											gui->begin_child("Movement", 2, 1);
+											{
+												gui->checkbox("Speed", &settings::movement::speedhack::enabled, &settings::movement::speedhack::keybind, &settings::movement::speedhack::activation_mode);
+												if (settings::movement::speedhack::enabled)
+												{
+													const char* speed_modes[] = { "Velocity", "Walkspeed", "CFrame" };
+													gui->dropdown("Speed Method", &settings::movement::speedhack::mode, speed_modes, IM_ARRAYSIZE(speed_modes));
+													gui->slider_float("Speed", &settings::movement::speedhack::speed, 16.f, 300.f);
+												}
+												gui->checkbox("Flight", &settings::movement::flyhack::enabled, &settings::movement::flyhack::keybind, &settings::movement::flyhack::activation_mode);
+												if (settings::movement::flyhack::enabled)
+												{
+													const char* fly_modes[] = { "Velocity", "CFrame", "CFrame" };
+													gui->dropdown("Flight Method", &settings::movement::flyhack::mode, fly_modes, IM_ARRAYSIZE(fly_modes));
+													gui->slider_float("Fly Speed", &settings::movement::flyhack::speed, 10.f, 300.f);
+												}
+												gui->checkbox("Spam Tp", &settings::movement::spam_tp::enabled, &settings::movement::spam_tp::keybind, &settings::movement::spam_tp::activation_mode);
+												if (settings::movement::spam_tp::enabled)
+												{
+													static const char* const spam_tp_modes[] = { "Orbit", "Random", "Behind", "Above" };
+													gui->dropdown("Pattern##spam_tp_mode", &settings::movement::spam_tp::mode, spam_tp_modes, IM_ARRAYSIZE(spam_tp_modes));
+													gui->slider_float("Radius##spam_tp_rad", &settings::movement::spam_tp::radius, 0.0f, 40.0f, false, "%.1f studs");
+													gui->slider_float("Height##spam_tp_hgt", &settings::movement::spam_tp::height, -15.0f, 40.0f, false, "%.1f studs");
+													gui->slider_float("Speed##spam_tp_spd", &settings::movement::spam_tp::speed, 1.0f, 30.0f, false, "%.1fx");
+												}
+												gui->checkbox("Bhop", &settings::movement::bhop::enabled, &settings::movement::bhop::keybind, &settings::movement::bhop::activation_mode);
+												if (settings::movement::bhop::enabled)
+												{
+													gui->slider_float("Bhop Speed", &settings::movement::bhop::speed, 16.f, 200.f);
+												}
+												gui->checkbox("Noclip", &settings::movement::noclip::enabled, &settings::movement::noclip::keybind, &settings::movement::noclip::activation_mode);
+												gui->checkbox("Infinite Jump", &settings::movement::infjump::enabled);
+												gui->checkbox("Gravity", &settings::movement::gravity::enabled);
+												if (settings::movement::gravity::enabled)
+												{
+													gui->slider_float("Gravity Level", &settings::movement::gravity::value, 0.f, 400.f);
+												}
+												gui->checkbox("Tickrate", &settings::movement::tickrate::enabled);
+												if (settings::movement::tickrate::enabled)
+												{
+													gui->slider_float("Tickrate", &settings::movement::tickrate::value, 30.f, 500.f);
+												}
+												gui->checkbox("Wallbug", &settings::movement::wallbug::enabled);
+												if (settings::movement::wallbug::enabled)
+												{
+													gui->slider_float("Height", &settings::movement::wallbug::height, 5.f, 100.f);
+												}
+												gui->checkbox("Wallslide", &settings::movement::wallslide::enabled, &settings::movement::wallslide::keybind, &settings::movement::wallslide::activation_mode);
+												gui->checkbox("Spider", &settings::movement::spiderman::enabled);
+											}
+											gui->end_child();
+										}
+										else if (exploits_subtab == 1)
+										{
+											gui->begin_child("Remote Spy", 2, 1);
+											{
+												gui->checkbox("Enabled", &settings::remotespy::enabled);
+												if (settings::remotespy::enabled)
+												{
+													gui->checkbox("Log FireServer", &settings::remotespy::log_fireserver);
+													gui->checkbox("Log InvokeServer", &settings::remotespy::log_invokeserver);
+													gui->checkbox("Log FireClient", &settings::remotespy::log_fireclient);
+													gui->checkbox("Log InvokeClient", &settings::remotespy::log_invokeclient);
+													gui->checkbox("Log Property Changes", &settings::remotespy::log_property_changes);
+													gui->slider_int("Max Logs", &settings::remotespy::max_logs, 100, 2000);
+													gui->checkbox("Auto Scroll", &settings::remotespy::auto_scroll);
+													gui->checkbox("Show Args", &settings::remotespy::show_args);
+													gui->checkbox("Show Stack Trace", &settings::remotespy::show_stack);
+													gui->checkbox("Block Calls", &settings::remotespy::block_calls);
+													if (settings::remotespy::block_calls)
+													{
+														gui->text_field("Blocked Remotes (comma separated)", settings::remotespy::filter_text, sizeof(settings::remotespy::filter_text));
+													}
+													if (gui->button("Open Remote Spy Window"))
+													{
+														remotespy::render_window();
+													}
+												}
+											}
+											gui->end_child();
+										}
+										else if (exploits_subtab == 2)
+										{
+											gui->begin_child("Instance Dumper", 2, 1);
+											{
+												gui->checkbox("Enabled", &settings::instancedumper::enabled);
+												if (settings::instancedumper::enabled)
+												{
+													keybind::keybind_selector(settings::instancedumper::keybind, reinterpret_cast<keybind::activation_mode&>(settings::instancedumper::activation_mode), "instancedumper_key");
+													gui->checkbox("Dump Properties", &settings::instancedumper::dump_properties);
+													gui->checkbox("Dump Children", &settings::instancedumper::dump_children);
+													gui->checkbox("Dump Scripts", &settings::instancedumper::dump_scripts);
+													gui->slider_int("Max Depth", &settings::instancedumper::max_depth, 1, 50);
+													gui->checkbox("Auto Open Folder", &settings::instancedumper::auto_open_folder);
+													gui->checkbox("Workspace Only", &settings::instancedumper::filter_workspace_only);
+													gui->text_field("Class/Name Filter", settings::instancedumper::filter_class, sizeof(settings::instancedumper::filter_class));
+													if (gui->button("Dump Workspace"))
+													{
+														instancedumper::dump_workspace();
+													}
+													gui->sameline();
+													if (gui->button("Dump Game"))
+													{
+														instancedumper::dump_game();
+													}
+													gui->sameline();
+													if (gui->button("Open Folder"))
+													{
+														ShellExecuteA(NULL, "open", settings::instancedumper::output_path, NULL, NULL, SW_SHOWNORMAL);
+													}
+													if (gui->button("Open Instance Dumper Window"))
+													{
+														instancedumper::render_window();
+													}
+												}
+											}
+											gui->end_child();
+										}
+									}
+								}
+								gui->end_group();
+
+								gui->sameline();
+
+								gui->begin_group();
+								{
+									bool is_in_arsenal = (game::datamodel && game::datamodel->address != 0 && game::datamodel->is_arsenal());
+									float total_h = GetWindowHeight() - elements->content.padding.y * 2.f - elements->content.spacing.y;
+
+									if (is_in_arsenal)
+									{
+										gui->begin_child("View", 2, 1, ImVec2(0, total_h * 0.73f - elements->content.spacing.y));
+									}
+									else
+									{
+										gui->begin_child("View", 2, 1);
+									}
+									{
+										gui->checkbox("Third Person", &settings::movement::third_person::enabled, &settings::movement::third_person::keybind, &settings::movement::third_person::activation_mode);
+										if (settings::movement::third_person::enabled)
+										{
+											gui->slider_float("Distance", &settings::movement::third_person::distance, 2.f, 80.f);
+										}
+
+										gui->checkbox("Free-Cam", &settings::movement::freecam::enabled, &settings::movement::freecam::keybind, &settings::movement::freecam::activation_mode);
+										if (settings::movement::freecam::enabled)
+										{
+											const char* mlook_modes[] = { "Hold RMB", "Always" };
+											gui->dropdown("Mouse Look", &settings::movement::freecam::mouse_look_mode, mlook_modes, IM_ARRAYSIZE(mlook_modes));
+											gui->slider_float("Camera Speed", &settings::movement::freecam::speed, 0.1f, 10.0f, false, "%.1fx");
+											gui->slider_float("Sensitivity", &settings::movement::freecam::sensitivity, 0.0005f, 0.01f, false, "%.4f");
+											gui->slider_float("Sprint Boost", &settings::movement::freecam::shift_multiplier, 1.0f, 5.0f, false, "%.1fx");
+
+										}
+										gui->checkbox("Desync", &settings::movement::desync::enabled, &settings::movement::desync::keybind, &settings::movement::desync::activation_mode);
+										gui->checkbox("No Fall Damage", &settings::movement::no_fall_damage::enabled);
+										gui->checkbox("Hip Height", &settings::movement::hipheight::enabled);
+										if (settings::movement::hipheight::enabled)
+										{
+											gui->slider_float("Height", &settings::movement::hipheight::value, 0.f, 25.f);
+										}
+										gui->checkbox("Long Neck", &settings::movement::longneck::enabled);
+										if (settings::movement::longneck::enabled)
+										{
+											gui->slider_float("Length", &settings::movement::longneck::length, 1.f, 30.f);
+										}
+										gui->checkbox("Void Hide", &settings::movement::voidhide::enabled, &settings::movement::voidhide::keybind, &settings::movement::voidhide::activation_mode);
+										gui->checkbox("Sit State", &settings::movement::sit::enabled);
+										gui->checkbox("Platform Stand", &settings::movement::platformstand::enabled);
+										gui->checkbox("BTools", &settings::btools::enabled);
+										if (settings::btools::enabled)
+										{
+											const char* tool_types[] = { "Hammer", "Grab", "Clone" };
+											gui->dropdown("Tool", &settings::btools::tool_type, tool_types, IM_ARRAYSIZE(tool_types));
+											keybind::keybind_selector(settings::btools::keybind, reinterpret_cast<keybind::activation_mode&>(settings::btools::activation_mode), "btools_key");
+										}
+										gui->checkbox("Auto Emote", &settings::misc::auto_emote, &settings::misc::auto_emote_keybind, &settings::misc::auto_emote_activation_mode);
+										if (settings::misc::auto_emote)
+										{
+											gui->slider_int("Emote Slot", &settings::misc::auto_emote_slot, 1, 9);
+											gui->slider_float("Emote Delay", &settings::misc::auto_emote_delay, 10.0f, 500.0f, false, "%.0fms");
+											gui->checkbox("Repeat While Held", &settings::misc::auto_emote_repeat);
+											if (settings::misc::auto_emote_repeat)
+											{
+												gui->slider_float("Repeat Interval", &settings::misc::auto_emote_repeat_delay, 100.0f, 3000.0f, false, "%.0fms");
+											}
+											if (gui->button("Trigger Emote"))
+											{
+												std::thread([]() {
+													misc::auto_emote::perform_emote();
+												}).detach();
+											}
+										}
+									}
+									gui->end_child();
+								}
+							}
+						}
+						gui->end_child();
+
+						bool is_in_arsenal = (game::datamodel && game::datamodel->address != 0 && game::datamodel->is_arsenal());
+						float total_h = GetWindowHeight() - elements->content.padding.y * 2.f - elements->content.spacing.y;
+
+						if (is_in_arsenal)
+						{
+							gui->begin_child("Arsenal", 2, 1, ImVec2(0, total_h * 0.27f));
+							{
+								gui->checkbox("Fast Fire Rate", &settings::arsenal::fast_fire_rate);
+								gui->checkbox("No Recoil", &settings::arsenal::no_recoil);
+								gui->checkbox("All Auto", &settings::arsenal::all_auto);
+								gui->checkbox("Infinite Ammo", &settings::arsenal::infinite_ammo);
+							}
+							gui->end_child();
+						}
+					}
+					gui->end_group();
+				}
+			}
+			gui->end_content();
+		}
+
+	}
+	gui->end();
+	gui->sameline();
+}
+
+			if (var->gui.current_section[1])
+			{
+				place_section_window("Players", ImVec2(280.f, 530.f));
+				static std::string selected_player_name = "";
+				static uint64_t selected_player_uid = 0;
+				static bool last_has_selection = false;
+
+				bool has_selection = !selected_player_name.empty();
+				if (has_selection != last_has_selection)
+				{
+					ImGui::SetWindowSize("Players", ImVec2(has_selection ? 660.0f : 280.0f, 530.0f));
+					last_has_selection = has_selection;
+				}
+
+				float window_w = has_selection ? 660.0f : 280.0f;
+				float min_w = has_selection ? 560.0f : 280.0f;
+
+				gui->set_next_window_size(ImVec2(window_w, 530), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(min_w, 440), ImVec2(has_selection ? GetIO().DisplaySize.x : 350.0f, GetIO().DisplaySize.y));
+				gui->begin("Players", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+
+					{
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + 1));
+						gui->begin_content();
+						{
+							static char player_search_buf[64] = "";
+
+							if (::render && ::render->detail && ::render->detail->device)
+							{
+								visuals::CAvatarManager::Get().ProcessPendingTextures(::render->detail->device);
+							}
+
+							std::vector<cache::entity_t> all_players;
+							cache::entity_t local_ent = cache::get_local_player();
+							if (local_ent.instance.address != 0)
+							{
+								all_players.push_back(local_ent);
+							}
+							{
+								std::lock_guard<std::mutex> lock(cache::mtx);
+								for (const auto& p : cache::players)
+								{
+									if (p.instance.address != local_ent.instance.address)
+									{
+										all_players.push_back(p);
+									}
+								}
+							}
+							float total_w = GetContentRegionAvail().x;
+							float total_h = GetContentRegionAvail().y;
+							bool has_selection = !selected_player_name.empty();
+							float left_w = has_selection ? 250.0f : total_w;
+							float right_w = total_w - left_w - elements->content.spacing.x;
+
+							gui->begin_group();
+							{
+								gui->begin_child("Players", 2, 1, ImVec2(left_w, total_h));
+								{
+									gui->push_font(var->font.tahoma);
+									gui->text_field("Search##player_search_box", player_search_buf, sizeof(player_search_buf));
+
+									std::string search_query = player_search_buf;
+									std::transform(search_query.begin(), search_query.end(), search_query.begin(), ::tolower);
+
+									ImGui::Dummy(ImVec2(0, 3));
+
+									ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 4.0f));
+
+									for (size_t i = 0; i < all_players.size(); i++)
+									{
+										const auto& p = all_players[i];
+										bool is_local = (local_ent.instance.address != 0 && p.instance.address == local_ent.instance.address);
+
+										std::string name_lower = p.name;
+										std::string disp_lower = p.display_name;
+										std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+										std::transform(disp_lower.begin(), disp_lower.end(), disp_lower.begin(), ::tolower);
+
+										if (!search_query.empty() && name_lower.find(search_query) == std::string::npos && disp_lower.find(search_query) == std::string::npos)
+											continue;
+
+										bool is_selected = (!selected_player_name.empty() && selected_player_name == p.name);
+										cache::player_priority prio = is_local ? cache::player_priority::neutral : playerlist::get_priority(p.name);
+
+										ImVec2 card_pos = GetCursorScreenPos();
+										float card_w = GetContentRegionAvail().x;
+										float card_h = 44.0f;
+										ImRect card_rect(card_pos, card_pos + ImVec2(card_w, card_h));
+
+										ImGuiID card_id = GetCurrentWindow()->GetID((std::string("##pcard_") + std::to_string(p.user_id) + "_" + p.name + "_" + std::to_string(i)).c_str());
+										ItemSize(card_rect);
+										if (ItemAdd(card_rect, card_id))
+										{
+											bool hovered, held;
+											bool pressed = ButtonBehavior(card_rect, card_id, &hovered, &held);
+											bool double_clicked = hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+											if (pressed)
+											{
+												if (selected_player_name == p.name)
+												{
+													selected_player_name.clear();
+													selected_player_uid = 0;
+												}
+												else
+												{
+													selected_player_name = p.name;
+													selected_player_uid = p.user_id;
+												}
+											}
+											else if (double_clicked)
+											{
+												selected_player_name.clear();
+												selected_player_uid = 0;
+											}
+
+											ImDrawList* dl = GetWindowDrawList();
+											ImU32 bg_col = is_selected
+												? draw->get_clr(clr->window.background_two)
+												: (hovered ? draw->get_clr(clr->window.background_one) : draw->get_clr(clr->window.background_one, 0.5f));
+											ImU32 border_col = is_selected ? draw->get_clr(clr->accent) : (hovered ? draw->get_clr(clr->widgets.stroke_two) : draw->get_clr(clr->window.stroke));
+
+											dl->AddRectFilled(card_rect.Min, card_rect.Max, bg_col, 0.0f);
+											dl->AddRect(card_rect.Min, card_rect.Max, border_col, 0.0f);
+
+											ImVec2 av_min = card_rect.Min + ImVec2(5, 5);
+											ImVec2 av_max = av_min + ImVec2(34, 34);
+											dl->AddRectFilled(av_min, av_max, draw->get_clr(clr->window.background_one), 0.0f);
+											dl->AddRect(av_min, av_max, draw->get_clr(clr->window.stroke), 0.0f);
+
+											ID3D11ShaderResourceView* avatar_tex = nullptr;
+											if (p.user_id != 0 && ::render && ::render->detail && ::render->detail->device)
+											{
+												avatar_tex = visuals::CAvatarManager::Get().GetAvatar(::render->detail->device, p.user_id, p.name);
+											}
+
+											if (avatar_tex)
+											{
+												dl->AddImage((ImTextureID)avatar_tex, av_min + ImVec2(1, 1), av_max - ImVec2(1, 1));
+											}
+											else
+											{
+												std::string init = p.name.empty() ? "?" : p.name.substr(0, 1);
+												draw->text_clipped_outline(dl, var->font.tahoma, av_min, av_max, draw->get_clr(clr->accent), init.c_str(), NULL, NULL, ImVec2(0.5f, 0.5f));
+											}
+
+											float text_x = av_max.x + 8.0f;
+											ImVec2 name_pos = ImVec2(text_x, card_rect.Min.y + 4.0f);
+											ImVec2 status_pos = ImVec2(text_x, card_rect.Min.y + 17.0f);
+											ImVec2 uid_pos = ImVec2(text_x, card_rect.Min.y + 30.0f);
+
+											ImU32 name_col = is_selected ? draw->get_clr(clr->accent) : draw->get_clr(clr->widgets.text);
+											draw->text_outline(dl, var->font.tahoma, var->font.tahoma->FontSize, name_pos, name_col, p.name.c_str());
+
+											const char* prio_str = is_local ? "Client" : ((prio == cache::player_priority::hostile) ? "Hostile" : ((prio == cache::player_priority::friendly) ? "Friendly" : "Neutral"));
+											ImU32 prio_col = is_local
+												? draw->get_clr(clr->accent)
+												: ((prio == cache::player_priority::hostile) ? IM_COL32(240, 70, 70, 255) : ((prio == cache::player_priority::friendly) ? IM_COL32(70, 230, 90, 255) : draw->get_clr(clr->widgets.text_inactive)));
+											draw->text_outline(dl, var->font.tahoma, var->font.tahoma->FontSize, status_pos, prio_col, prio_str);
+
+											std::string uid_str = "ID: " + std::to_string(p.user_id);
+											draw->text_outline(dl, var->font.tahoma, var->font.tahoma->FontSize, uid_pos, draw->get_clr(clr->widgets.text_inactive), uid_str.c_str());
+										}
+
+									}
+									ImGui::PopStyleVar();
+									gui->pop_font();
+								}
+								gui->end_child();
+							}
+							gui->end_group();
+
+							if (has_selection)
+							{
+								gui->sameline();
+
+								gui->begin_group();
+								{
+									gui->begin_child("Selected", 2, 1, ImVec2(right_w, total_h));
+									{
+										cache::entity_t sel_ent{};
+										bool found = false;
+										for (const auto& p : all_players)
+										{
+											if (p.name == selected_player_name || (selected_player_uid != 0 && p.user_id == selected_player_uid))
+											{
+												sel_ent = p;
+												found = true;
+												break;
+											}
+										}
+
+										if (found)
+										{
+											bool is_local = (local_ent.instance.address != 0 && sel_ent.instance.address == local_ent.instance.address);
+
+											float canvas_w = GetContentRegionAvail().x;
+											float canvas_h = 240.0f;
+											ImVec2 canvas_size(canvas_w, canvas_h);
+
+											ImVec2 img_pos = GetCursorScreenPos();
+											ImDrawList* dl = GetWindowDrawList();
+											ID3D11ShaderResourceView* full_avatar_tex = nullptr;
+											if (sel_ent.user_id != 0 && ::render && ::render->detail && ::render->detail->device)
+											{
+												full_avatar_tex = visuals::CAvatarManager::Get().GetFullAvatar(::render->detail->device, sel_ent.user_id, sel_ent.name);
+												if (!full_avatar_tex)
+												{
+													full_avatar_tex = visuals::CAvatarManager::Get().GetAvatar(::render->detail->device, sel_ent.user_id, sel_ent.name);
+												}
+											}
+
+											if (full_avatar_tex)
+											{
+												float img_dim = (std::min)(canvas_w, canvas_h);
+												ImVec2 p_center = img_pos + canvas_size * 0.5f;
+												ImVec2 p_min = p_center - ImVec2(img_dim * 0.5f, img_dim * 0.5f);
+												ImVec2 p_max = p_center + ImVec2(img_dim * 0.5f, img_dim * 0.5f);
+												dl->AddImage((ImTextureID)full_avatar_tex, p_min, p_max);
+											}
+											else
+											{
+												std::string init = sel_ent.name.empty() ? "Loading..." : sel_ent.name;
+												draw->text_clipped_outline(dl, var->font.tahoma, img_pos, img_pos + canvas_size, draw->get_clr(clr->widgets.text_inactive), init.c_str(), NULL, NULL, ImVec2(0.5f, 0.5f));
+											}
+
+											ImGui::Dummy(canvas_size + ImVec2(0, 4));
+
+											gui->push_font(var->font.tahoma);
+											auto draw_info_row = [&](const char* label, const std::string& val, ImU32 val_col) {
+												gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+												TextUnformatted(label);
+												gui->pop_style_color();
+												gui->sameline();
+												gui->push_style_color(ImGuiCol_Text, val_col);
+												TextUnformatted(val.c_str());
+												gui->pop_style_color();
+											};
+
+											draw_info_row("Display:", sel_ent.display_name.empty() ? sel_ent.name : sel_ent.display_name, draw->get_clr(clr->accent));
+											draw_info_row("Username:", sel_ent.name, draw->get_clr(clr->accent));
+											draw_info_row("ID:", std::to_string(sel_ent.user_id), draw->get_clr(clr->accent));
+
+											int approx_days = (int)(sel_ent.user_id > 100000000 ? (1000 + (sel_ent.user_id % 2000)) : 3500);
+											draw_info_row("Account age:", std::to_string(approx_days) + " days", draw->get_clr(clr->accent));
+
+											std::ostringstream pos_ss;
+											pos_ss << std::fixed << std::setprecision(1) << sel_ent.position.x << ", " << sel_ent.position.y << ", " << sel_ent.position.z;
+											draw_info_row("Position:", pos_ss.str(), draw->get_clr(clr->accent));
+
+											ImGui::Dummy(ImVec2(0, 2));
+
+											bool is_current_spectating = playerlist::is_spectating() && playerlist::get_spectating_name() == sel_ent.name;
+											const char* spec_btn_text = is_current_spectating ? "Stop Spectating##p_spectate" : "Spectate##p_spectate";
+
+											if (gui->button(spec_btn_text, is_current_spectating ? 1 : 2))
+											{
+												if (is_current_spectating)
+												{
+													playerlist::stop_spectating();
+													notifications::add("Stopped spectating");
+												}
+												else
+												{
+													playerlist::start_spectating(sel_ent.name);
+													notifications::add("Spectating " + sel_ent.name);
+												}
+											}
+											gui->sameline();
+											if (gui->button("Bring##p_bring", 2))
+											{
+												notifications::add("Bring requested for " + sel_ent.name);
+											}
+
+											if (gui->button("Teleport##p_teleport", 2))
+											{
+												if (sel_ent.position.x != 0.f || sel_ent.position.y != 0.f || sel_ent.position.z != 0.f)
+												{
+													waypoints::teleport_to_pos(sel_ent.position);
+													notifications::add("Teleported to " + sel_ent.name);
+												}
+												else
+												{
+													notifications::add("Invalid player coordinates");
+												}
+											}
+											gui->sameline();
+											if (gui->button("Freeze##p_freeze", 2))
+											{
+												notifications::add("Freeze toggled on " + sel_ent.name);
+											}
+
+											if (gui->button("View Backpack##p_backpack", 2))
+											{
+												std::string tool = sel_ent.tool_name.empty() ? "No tools equipped" : ("Equipped: " + sel_ent.tool_name);
+												notifications::add(sel_ent.name + " - " + tool);
+											}
+											gui->sameline();
+											if (gui->button("Open Profile##p_profile", 2))
+											{
+												if (sel_ent.user_id != 0)
+												{
+													std::string url = "https://www.roblox.com/users/" + std::to_string(sel_ent.user_id) + "/profile";
+													ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+												}
+											}
+
+											gui->sameline();
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+						}
+						gui->end_content();
+					}
+
+				}
+				gui->end();
+				gui->sameline();
+			}
+			}
+
+			if (var->gui.viewer_open)
+			{
+				ImGuiWindow* home_win = ImGui::FindWindowByName("Home");
+				if (home_win)
+				{
+					float preview_x = home_win->Pos.x + home_win->Size.x + 10.f;
+					if (preview_x + 350.f > GetIO().DisplaySize.x)
+					{
+						preview_x = home_win->Pos.x - 350.f - 10.f;
+						if (preview_x < 10.f) preview_x = 10.f;
+					}
+					float preview_y = home_win->Pos.y;
+					gui->set_next_window_pos(ImVec2(preview_x, preview_y), ImGuiCond_Always);
+				}
+				else
+				{
+					float start_x = (GetIO().DisplaySize.x - 600.f) * 0.5f + 610.f;
+					if (start_x + 350.f > GetIO().DisplaySize.x) start_x = (GetIO().DisplaySize.x - 600.f) * 0.5f - 360.f;
+					if (start_x < 10.f) start_x = 10.f;
+					float start_y = 65.f;
+					gui->set_next_window_pos(ImVec2(start_x, start_y), ImGuiCond_Always);
+				}
+				gui->set_next_window_size(ImVec2(350, 440), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(300, 350), GetIO().DisplaySize);
+				gui->begin("Viewer", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+					{
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + 1));
+						gui->begin_content();
+						{
+							gui->begin_group();
+							{
+								gui->begin_child("Preview", 1, 1, ImVec2(0, 0));
+								{
+									ImVec2 canvas_size = ImGui::GetContentRegionAvail();
+									if (canvas_size.x > 10.f && canvas_size.y > 10.f && ::render && ::render->detail && ::render->detail->device && ::render->detail->device_context)
+									{
+										if (ModelViewer::g_model_viewer.CreateOffscreenResources(::render->detail->device, canvas_size.x, canvas_size.y))
+										{
+											ModelViewer::g_model_viewer.Render3D(::render->detail->device_context, canvas_size.x, canvas_size.y);
+											ID3D11ShaderResourceView* srv = ModelViewer::g_model_viewer.GetShaderResourceView();
+											if (srv)
+											{
+												ImGui::Image(reinterpret_cast<ImTextureID>(srv), canvas_size);
+												ModelViewer::g_model_viewer.RenderESPOverlay(ImGui::GetItemRectMin(), canvas_size);
+												if (ImGui::IsItemHovered())
+												{
+													if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+													{
+														ModelViewer::g_model_viewer.RefreshAvatar();
+													}
+													ImGuiIO& io = ImGui::GetIO();
+													if (io.MouseWheel != 0.0f)
+													{
+														ModelViewer::g_model_viewer.cam_distance -= io.MouseWheel * 0.3f;
+														ModelViewer::g_model_viewer.cam_distance = std::clamp(ModelViewer::g_model_viewer.cam_distance, 1.2f, 20.0f);
+													}
+													if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && !ModelViewer::g_model_viewer.is_dragging_healthbar)
+													{
+														ModelViewer::g_model_viewer.cam_yaw += io.MouseDelta.x * 0.005f;
+														ModelViewer::g_model_viewer.cam_pitch += io.MouseDelta.y * 0.005f;
+														ModelViewer::g_model_viewer.cam_pitch = std::clamp(ModelViewer::g_model_viewer.cam_pitch, -1.55f, 1.55f);
+													}
+													else if (ImGui::IsMouseDragging(ImGuiMouseButton_Right) || ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+													{
+														float pan_speed = ModelViewer::g_model_viewer.cam_distance * 0.002f;
+														ModelViewer::g_model_viewer.cam_target.x -= io.MouseDelta.x * pan_speed * cosf(ModelViewer::g_model_viewer.cam_yaw);
+														ModelViewer::g_model_viewer.cam_target.z += io.MouseDelta.x * pan_speed * sinf(ModelViewer::g_model_viewer.cam_yaw);
+														ModelViewer::g_model_viewer.cam_target.y += io.MouseDelta.y * pan_speed;
+													}
+												}
+											}
+										}
+									}
+								}
+								gui->end_child();
+							}
+							gui->end_group();
+						}
+						gui->end_content();
+					}
+				}
+				gui->end();
+				gui->sameline();
+			}
+
+			if (var->gui.current_section[3])
+			{
+				place_section_window("Explorer", ImVec2(680.f, 520.f));
+				gui->set_next_window_size(ImVec2(680, 520), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(500, 400), GetIO().DisplaySize);
+				gui->begin("Explorer", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+					{
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + 1));
+						gui->begin_content();
+						{
+							if (!explorer::explorer->root && !explorer::explorer->is_refreshing)
+							{
+								explorer::run();
+							}
+
+							gui->begin_group();
+							{
+								gui->begin_child("Explorer", 2, 1);
+								{
+									if (gui->button("Refresh"))
+									{
+										explorer::run();
+										notifications::add("Refreshing...");
+									}
+
+									ImGui::BeginChild("tree_scroll_area_embedded", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+									if (explorer::explorer->root)
+									{
+										explorer::explorer->render_node(explorer::explorer->root);
+									}
+									else
+									{
+										if (explorer::explorer->is_refreshing)
+											ImGui::TextDisabled("Scanning game...");
+										else
+											ImGui::TextDisabled("Click Refresh.");
+									}
+									ImGui::EndChild();
+								}
+								gui->end_child();
+							}
+							gui->end_group();
+
+							gui->sameline();
+
+							gui->begin_group();
+							{
+								gui->begin_child("Properties", 2, 1);
+								{
+									if (explorer::explorer->selected_node)
+									{
+										explorer::explorer->render_properties();
+									}
+									else
+									{
+										ImGui::TextDisabled("Select an instance from the hierarchy tree.");
+									}
+								}
+								gui->end_child();
+							}
+							gui->end_group();
+						}
+						gui->end_content();
+					}
+				}
+				gui->end();
+				gui->sameline();
+			}
+
+			if (var->gui.current_section[4])
+			{
+				place_section_window("Code", ImVec2(560.f, 500.f));
+				gui->set_next_window_size(ImVec2(560, 500), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(450, 400), GetIO().DisplaySize);
+				gui->begin("Code", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+					{
+						static int code_subtab = 0;
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar));
+						gui->begin_group();
+						{
+							gui->sub_section("Executor", 0, code_subtab, 2);
+							gui->sub_section("Settings", 1, code_subtab, 2);
+						}
+						gui->end_group();
+
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + elements->section.height - 1));
+						gui->begin_content();
+						{
+							if (code_subtab == 0)
+							{
+								gui->begin_group();
+								{
+									ImGuiID exec_box_id = GetCurrentWindow()->GetID("Executor Area");
+									gui->begin_multi_subtab(
+										"Executor Area",
+										1,
+										1,
+										2,
+										ImVec2(0, 0),
+										{ "Luau", "Console" }
+									);
+									{
+										int exec_subtab = gui->get_child_subtab(exec_box_id);
+										if (exec_subtab == 0)
+										{
+											float editor_h = (std::max)(120.f, GetContentRegionAvail().y - 28.f);
+											g_lua_editor.render("##code_executor_box", ImVec2(0, editor_h));
+
+											if (gui->button("Execute", 2))
+											{
+												std::string code = g_lua_editor.get_text();
+												if (!code.empty())
+												{
+													LuaVM::Execute(code);
+													notifications::add("Executed!");
+												}
+											}
+											gui->sameline();
+											if (gui->button("Clear Editor", 2))
+											{
+												g_lua_editor.set_text("");
+											}
+										}
+										else if (exec_subtab == 1)
+										{
+											auto logs = LuaVM::GetLogs();
+											float console_h = (std::max)(100.f, GetContentRegionAvail().y - 32.f);
+
+											gui->push_style_var(ImGuiStyleVar_WindowPadding, ImVec2(6, 6));
+											gui->begin_def_child("lua_console_scroll", ImVec2(GetWindowWidth() - elements->content.padding.x * 2.f, console_h), ImGuiChildFlags_None, ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoMove);
+											{
+												gui->push_font(var->font.tahoma);
+												if (logs.empty())
+												{
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+													TextUnformatted("Lua console output will appear here...");
+													gui->pop_style_color();
+												}
+												else
+												{
+													for (const auto& entry : logs)
+													{
+														if (entry.is_error)
+															gui->push_style_color(ImGuiCol_Text, IM_COL32(255, 87, 87, 255));
+														else
+															gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text));
+
+														TextUnformatted(entry.message.c_str());
+														gui->pop_style_color();
+													}
+													if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+														ImGui::SetScrollHereY(1.0f);
+												}
+												gui->pop_font();
+											}
+											gui->end_def_child();
+											gui->pop_style_var();
+
+											if (gui->button("Clear Console", 2))
+											{
+												LuaVM::ClearLogs();
+												notifications::add("Console Cleared!");
+											}
+											gui->sameline();
+											static char quick_cmd[256] = "";
+											gui->text_field("##quick_cmd_box", quick_cmd, sizeof(quick_cmd));
+											if (ImGui::IsItemFocused() && (GetAsyncKeyState(VK_RETURN) & 0x1))
+											{
+												if (strlen(quick_cmd) > 0)
+												{
+													LuaVM::Execute(quick_cmd);
+													quick_cmd[0] = '\0';
+												}
+											}
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (code_subtab == 1)
+							{
+								gui->begin_group();
+								{
+									ImGuiID settings_box_id = GetCurrentWindow()->GetID("Code Settings");
+									gui->begin_multi_subtab(
+										"Code Settings",
+										1,
+										1,
+										2,
+										ImVec2(0, 0),
+										{ "Presets", "Settings" }
+									);
+									{
+										int settings_subtab = gui->get_child_subtab(settings_box_id);
+										if (settings_subtab == 0)
+										{
+											static char script_name[64] = "myscript";
+											static int selected_script_idx = -1;
+											std::vector<std::string> scripts = config::get_script_list();
+
+											gui->begin_child("Presets", 1, 2);
+											{
+												gui->push_font(var->font.tahoma);
+												if (scripts.empty())
+												{
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+													TextUnformatted("No presets found. Save one below!");
+													gui->pop_style_color();
+												}
+												else
+												{
+													for (size_t i = 0; i < scripts.size(); i++)
+													{
+														bool is_sel = (selected_script_idx == (int)i);
+														if (is_sel)
+															gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+														else
+															gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+
+														std::string disp = scripts[i];
+														ImVec2 sz = CalcTextSize(disp.c_str());
+														float avail_w = GetContentRegionAvail().x;
+														float cx = (avail_w - sz.x) * 0.5f;
+														if (cx > 0) SetCursorPosX(cx);
+
+														draw->text_outline(disp.c_str());
+														if (IsItemClicked())
+														{
+															selected_script_idx = (int)i;
+															strncpy_s(script_name, scripts[i].c_str(), sizeof(script_name) - 1);
+														}
+
+														gui->pop_style_color();
+
+														ImVec2 item_max = GetItemRectMax();
+														float win_min_x = GetWindowPos().x + elements->widgets.padding.x;
+														float win_max_x = GetWindowPos().x + GetWindowWidth() - elements->widgets.padding.x;
+														float line_y = item_max.y + 4.0f;
+														draw->line(GetWindowDrawList(), ImVec2(win_min_x, line_y), ImVec2(win_max_x, line_y), draw->get_clr(clr->window.stroke));
+														SetCursorPosY(GetCursorPosY() + 7.0f);
+													}
+												}
+												gui->pop_font();
+											}
+											gui->end_child();
+
+											gui->begin_child("Actions", 1, 2);
+											{
+												gui->text_field("##script_name_box", script_name, sizeof(script_name));
+
+												if (gui->button("Save to Preset", 2))
+												{
+													if (strlen(script_name) > 0)
+													{
+														std::string code = g_lua_editor.get_text();
+														config::save_script(script_name, code);
+														scripts = config::get_script_list();
+														notifications::add("Script Saved: " + std::string(script_name));
+													}
+												}
+												gui->sameline();
+												if (gui->button("Load to Editor", 2))
+												{
+													if (selected_script_idx >= 0 && selected_script_idx < (int)scripts.size())
+													{
+														std::string code = config::load_script(scripts[selected_script_idx]);
+														g_lua_editor.set_text(code);
+														notifications::add("Loaded to Editor: " + scripts[selected_script_idx]);
+													}
+												}
+
+												if (gui->button("Execute Preset", 2))
+												{
+													if (selected_script_idx >= 0 && selected_script_idx < (int)scripts.size())
+													{
+														std::string code = config::load_script(scripts[selected_script_idx]);
+														if (!code.empty())
+														{
+															LuaVM::Execute(code);
+															notifications::add("Executed: " + scripts[selected_script_idx]);
+														}
+													}
+												}
+												gui->sameline();
+												if (gui->button("Delete Preset", 2))
+												{
+													if (selected_script_idx >= 0 && selected_script_idx < (int)scripts.size())
+													{
+														config::delete_script(scripts[selected_script_idx]);
+														scripts = config::get_script_list();
+														selected_script_idx = -1;
+														notifications::add("Script Deleted!");
+													}
+												}
+
+												if (gui->button("Refresh List", 1))
+												{
+													scripts = config::get_script_list();
+													notifications::add("Scripts Refreshed!");
+												}
+											}
+											gui->end_child();
+										}
+										else if (settings_subtab == 1)
+										{
+											if (gui->checkbox("Mcp Bridge", &settings::mcp::enabled))
+											{
+												if (settings::mcp::enabled)
+													notifications::add("Mcp Server enabled on port " + std::to_string(settings::mcp::port));
+												else
+													notifications::add("Mcp Server disabled");
+											}
+
+											if (gui->button("Copy Info", 1))
+											{
+												int port = settings::mcp::port;
+												std::string info = "http://127.0.0.1:" + std::to_string(port) + "/mcp (Server Port: " + std::to_string(port) + ")";
+												SetClipboardText(info.c_str());
+												notifications::add("Mcp connection info copied to clipboard!");
+											}
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+						}
+						gui->end_content();
+					}
+				}
+				gui->end();
+				gui->sameline();
+			}
+
+			static bool s_style_was_open = false;
+			if (var->gui.current_section[5])
+			{
+				place_section_window("Style", ImVec2(466.f, 475.f));
+				if (!s_style_was_open)
+				{
+					settings::theme::accent[0] = clr->accent.Value.x; settings::theme::accent[1] = clr->accent.Value.y; settings::theme::accent[2] = clr->accent.Value.z; settings::theme::dark_accent[0] = clr->dark_accent.Value.x; settings::theme::dark_accent[1] = clr->dark_accent.Value.y; settings::theme::dark_accent[2] = clr->dark_accent.Value.z;
+					settings::theme::background_one[0] = clr->window.background_one.Value.x; settings::theme::background_one[1] = clr->window.background_one.Value.y; settings::theme::background_one[2] = clr->window.background_one.Value.z;
+					settings::theme::background_two[0] = clr->window.background_two.Value.x; settings::theme::background_two[1] = clr->window.background_two.Value.y; settings::theme::background_two[2] = clr->window.background_two.Value.z;
+					settings::theme::stroke[0] = clr->window.stroke.Value.x; settings::theme::stroke[1] = clr->window.stroke.Value.y; settings::theme::stroke[2] = clr->window.stroke.Value.z;
+					settings::theme::stroke_two[0] = clr->widgets.stroke_two.Value.x; settings::theme::stroke_two[1] = clr->widgets.stroke_two.Value.y; settings::theme::stroke_two[2] = clr->widgets.stroke_two.Value.z;
+					settings::theme::text[0] = clr->widgets.text.Value.x; settings::theme::text[1] = clr->widgets.text.Value.y; settings::theme::text[2] = clr->widgets.text.Value.z;
+					settings::theme::text_inactive[0] = clr->widgets.text_inactive.Value.x; settings::theme::text_inactive[1] = clr->widgets.text_inactive.Value.y; settings::theme::text_inactive[2] = clr->widgets.text_inactive.Value.z; settings::theme::unsafe_text[0] = clr->widgets.unsafe_text.Value.x; settings::theme::unsafe_text[1] = clr->widgets.unsafe_text.Value.y; settings::theme::unsafe_text[2] = clr->widgets.unsafe_text.Value.z;
+				}
+				s_style_was_open = true;
+				gui->set_next_window_size(ImVec2(466, 475), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(300, 300), GetIO().DisplaySize);
+				gui->begin("Style", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+
+					{
+						static int style_subtab = 0;
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar));
+						gui->begin_group();
+						{
+							gui->sub_section("Themes", 0, style_subtab, 4);
+							gui->sub_section("Extra", 1, style_subtab, 4);
+							gui->sub_section("Watermark", 2, style_subtab, 4);
+							gui->sub_section("Notifications", 3, style_subtab, 4);
+						}
+						gui->end_group();
+
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + elements->section.height - 1));
+						gui->begin_content();
+						{
+							if (style_subtab == 0)
+							{
+								gui->begin_group();
+								{
+									ImGuiID theme_box_id = GetCurrentWindow()->GetID("Theme Options");
+									gui->begin_multi_subtab(
+										"Theme Options",
+										1,
+										1,
+										2,
+										ImVec2(0, 0),
+										{ "Themes", "Configs" }
+									);
+									{
+										int theme_subtab = gui->get_child_subtab(theme_box_id);
+										if (theme_subtab == 0)
+										{
+											if (settings::theme::preset < 0 || settings::theme::preset >= Theme::GetThemeCount())
+											{
+												settings::theme::preset = 0;
+											}
+											if (gui->dropdown("Theme Preset", &settings::theme::preset, Theme::GetThemeNames(), Theme::GetThemeCount()))
+											{
+												Theme::ApplyTheme(settings::theme::preset);
+												settings::theme::accent[0] = clr->accent.Value.x; settings::theme::accent[1] = clr->accent.Value.y; settings::theme::accent[2] = clr->accent.Value.z; settings::theme::dark_accent[0] = clr->dark_accent.Value.x; settings::theme::dark_accent[1] = clr->dark_accent.Value.y; settings::theme::dark_accent[2] = clr->dark_accent.Value.z;
+												settings::theme::background_one[0] = clr->window.background_one.Value.x; settings::theme::background_one[1] = clr->window.background_one.Value.y; settings::theme::background_one[2] = clr->window.background_one.Value.z;
+												settings::theme::background_two[0] = clr->window.background_two.Value.x; settings::theme::background_two[1] = clr->window.background_two.Value.y; settings::theme::background_two[2] = clr->window.background_two.Value.z;
+												settings::theme::stroke[0] = clr->window.stroke.Value.x; settings::theme::stroke[1] = clr->window.stroke.Value.y; settings::theme::stroke[2] = clr->window.stroke.Value.z;
+												settings::theme::stroke_two[0] = clr->widgets.stroke_two.Value.x; settings::theme::stroke_two[1] = clr->widgets.stroke_two.Value.y; settings::theme::stroke_two[2] = clr->widgets.stroke_two.Value.z;
+												settings::theme::text[0] = clr->widgets.text.Value.x; settings::theme::text[1] = clr->widgets.text.Value.y; settings::theme::text[2] = clr->widgets.text.Value.z;
+												settings::theme::text_inactive[0] = clr->widgets.text_inactive.Value.x; settings::theme::text_inactive[1] = clr->widgets.text_inactive.Value.y; settings::theme::text_inactive[2] = clr->widgets.text_inactive.Value.z; settings::theme::unsafe_text[0] = clr->widgets.unsafe_text.Value.x; settings::theme::unsafe_text[1] = clr->widgets.unsafe_text.Value.y; settings::theme::unsafe_text[2] = clr->widgets.unsafe_text.Value.z;
+											}
+
+											if (gui->label_color_edit("Menu Accent", settings::theme::accent, false))
+											{
+												clr->accent = ImColor(settings::theme::accent[0], settings::theme::accent[1], settings::theme::accent[2], 1.f);
+												clr->dark_accent = ImColor(ImMax(settings::theme::accent[0] * 0.77f, 0.f), ImMax(settings::theme::accent[1] * 0.78f, 0.f), ImMax(settings::theme::accent[2] * 0.78f, 0.f), 1.f);
+											}
+
+											if (gui->label_color_edit("Contrast One", settings::theme::background_one, false))
+											{
+												clr->window.background_one = ImColor(settings::theme::background_one[0], settings::theme::background_one[1], settings::theme::background_one[2], 1.f);
+											}
+
+											if (gui->label_color_edit("Contrast Two", settings::theme::background_two, false))
+											{
+												clr->window.background_two = ImColor(settings::theme::background_two[0], settings::theme::background_two[1], settings::theme::background_two[2], 1.f);
+											}
+
+											if (gui->label_color_edit("Inline", settings::theme::stroke, false))
+											{
+												clr->window.stroke = ImColor(settings::theme::stroke[0], settings::theme::stroke[1], settings::theme::stroke[2], 1.f);
+											}
+
+											if (gui->label_color_edit("Outline", settings::theme::stroke_two, false))
+											{
+												clr->widgets.stroke_two = ImColor(settings::theme::stroke_two[0], settings::theme::stroke_two[1], settings::theme::stroke_two[2], 1.f);
+											}
+
+											if (gui->label_color_edit("Text Active", settings::theme::text, false))
+											{
+												clr->widgets.text = ImColor(settings::theme::text[0], settings::theme::text[1], settings::theme::text[2], 1.f);
+											}
+
+											if (gui->label_color_edit("Unsafe Feature", settings::theme::unsafe_text, false))
+												{
+													clr->widgets.unsafe_text = ImColor(settings::theme::unsafe_text[0], settings::theme::unsafe_text[1], settings::theme::unsafe_text[2], 1.f);
+												}
+
+												if (gui->label_color_edit("Text Inactive", settings::theme::text_inactive, false))
+											{
+												clr->widgets.text_inactive = ImColor(settings::theme::text_inactive[0], settings::theme::text_inactive[1], settings::theme::text_inactive[2], 1.f);
+											}
+
+											if (gui->button("Extract Colors"))
+											{
+												auto to_hex = [](const ImColor& c) -> std::string {
+													char hex[16];
+													snprintf(hex, sizeof(hex), "#%02X%02X%02X", (int)(c.Value.x * 255.f), (int)(c.Value.y * 255.f), (int)(c.Value.z * 255.f));
+													return std::string(hex);
+												};
+
+												std::ostringstream ss;
+												ss << "Menu Accent: " << to_hex(clr->accent) << "\n";
+												ss << "Contrast One: " << to_hex(clr->window.background_one) << "\n";
+												ss << "Contrast Two: " << to_hex(clr->window.background_two) << "\n";
+												ss << "Inline: " << to_hex(clr->window.stroke) << "\n";
+												ss << "Outline: " << to_hex(clr->widgets.stroke_two) << "\n";
+												ss << "Text Active: " << to_hex(clr->widgets.text) << "\n";
+												ss << "Text Inactive: " << to_hex(clr->widgets.text_inactive) << "\n";
+													ss << "Unsafe Feature: " << to_hex(clr->widgets.unsafe_text) << "\n";
+
+												ImGui::SetClipboardText(ss.str().c_str());
+												notifications::add("Colors copied to clipboard!");
+											}
+										}
+										else if (theme_subtab == 1)
+										{
+											static char new_theme_name[64] = "";
+											static int selected_theme_index = -1;
+
+											std::vector<std::string> theme_list = config::get_theme_list();
+
+											gui->begin_child("Themes", 1, 2);
+											{
+												gui->push_font(var->font.tahoma);
+												if (theme_list.empty())
+												{
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+													TextUnformatted("No themes found. Save one below!");
+													gui->pop_style_color();
+												}
+												else
+												{
+													for (size_t i = 0; i < theme_list.size(); i++)
+													{
+														bool is_selected = (selected_theme_index == (int)i);
+														if (is_selected)
+															gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+														else
+															gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+
+														std::string display_name = theme_list[i];
+														ImVec2 text_size = CalcTextSize(display_name.c_str());
+														float avail_w = GetContentRegionAvail().x;
+														float center_pos_x = (avail_w - text_size.x) * 0.5f;
+														if (center_pos_x > 0)
+															SetCursorPosX(center_pos_x);
+
+														draw->text_outline(display_name.c_str());
+														if (IsItemClicked())
+														{
+															selected_theme_index = (int)i;
+															strncpy_s(new_theme_name, theme_list[i].c_str(), sizeof(new_theme_name) - 1);
+														}
+
+														gui->pop_style_color();
+
+														ImVec2 item_max = GetItemRectMax();
+														float win_min_x = GetWindowPos().x + elements->widgets.padding.x;
+														float win_max_x = GetWindowPos().x + GetWindowWidth() - elements->widgets.padding.x;
+														float line_y = item_max.y + 4.0f;
+														draw->line(GetWindowDrawList(), ImVec2(win_min_x, line_y), ImVec2(win_max_x, line_y), draw->get_clr(clr->window.stroke));
+														SetCursorPosY(GetCursorPosY() + 7.0f);
+													}
+												}
+												gui->pop_font();
+											}
+											gui->end_child();
+
+											gui->begin_child("Actions", 1, 2);
+											{
+												gui->text_field("##themename", new_theme_name, sizeof(new_theme_name));
+
+												if (gui->button("Save", 2))
+												{
+													if (strlen(new_theme_name) > 0)
+													{
+														config::save_theme_custom(new_theme_name);
+														theme_list = config::get_theme_list();
+														notifications::add("Theme Saved!");
+													}
+												}
+												gui->sameline();
+												if (gui->button("Load", 2))
+												{
+													if (selected_theme_index >= 0 && selected_theme_index < (int)theme_list.size())
+													{
+														config::load_theme_custom(theme_list[selected_theme_index]);
+														notifications::add("Theme Loaded: " + theme_list[selected_theme_index]);
+													}
+												}
+
+												if (gui->button("Auto Load", 2))
+												{
+													if (selected_theme_index >= 0 && selected_theme_index < (int)theme_list.size())
+													{
+														config::set_theme_autoload(theme_list[selected_theme_index]);
+														notifications::add("Theme Autoload Set: " + theme_list[selected_theme_index]);
+													}
+												}
+												gui->sameline();
+												if (gui->button("Clear", 2))
+												{
+													config::clear_theme_autoload();
+													notifications::add("Theme Autoload Cleared!");
+												}
+											}
+											gui->end_child();
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (style_subtab == 1)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Extra", 1, 1);
+									{
+										gui->checkbox("Window Gradients", &var->window.window_gradients);
+										gui->checkbox("Hover Highlight", &var->window.hover_hightlight);
+										gui->checkbox("Lerp Animations", &var->window.lerp_animations);
+										gui->checkbox("Custom Cursor", &var->gui.custom_cursor);
+										gui->checkbox("Stream Proof", &settings::streamproof);
+
+										ImGui::SeparatorText("Rounding");
+										gui->slider_float("Window Rounding", &var->window.rounding, 0.f, 16.f, false, "%.0f");
+										gui->slider_float("Child Rounding", &var->window.child_rounding, 0.f, 12.f, false, "%.0f");
+										gui->slider_float("Frame Rounding", &var->window.frame_rounding, 0.f, 8.f, false, "%.0f");
+										gui->slider_float("Grab Rounding", &var->window.grab_rounding, 0.f, 8.f, false, "%.0f");
+
+										ImGui::SeparatorText("Spacing & Shadows");
+										gui->slider_float("Item Spacing X", &var->window.spacing.x, 4.f, 20.f, false, "%.0f");
+										gui->slider_float("Item Spacing Y", &var->window.spacing.y, 4.f, 20.f, false, "%.0f");
+										gui->slider_float("Shadow Size", &var->window.shadow_size, 0.f, 80.f, false, "%.0f");
+										gui->slider_float("Shadow Alpha", &var->window.shadow_alpha, 0.f, 1.f, false, "%.2f");
+										gui->slider_float("Border Size", &var->window.border_size, 0.f, 3.f, false, "%.0f");
+										gui->slider_float("Scrollbar Size", &var->window.scrollbar_size, 2.f, 12.f, false, "%.0f");
+
+										gui->checkbox("Window Glow", &var->window.window_glow);
+										if (var->window.window_glow)
+										{
+											gui->slider_float("Glow Thickness", &var->window.shadow_size, 1, 100);
+											gui->slider_float("Glow Alpha", &var->window.shadow_alpha, 0, 1);
+										}
+										else
+											var->window.shadow_size = 0;
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (style_subtab == 2)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Watermark", 1, 1);
+									{
+										gui->checkbox("Watermark Enabled", &settings::watermark::enabled);
+										if (settings::watermark::enabled)
+										{
+											gui->checkbox("Draggable", &settings::watermark::draggable);
+											gui->checkbox("Show Username", &settings::watermark::show_username);
+											gui->checkbox("Show FPS", &settings::watermark::show_fps);
+											gui->checkbox("Show Game ID", &settings::watermark::show_game_id);
+											gui->checkbox("Show Place ID", &settings::watermark::show_place_id);
+											gui->checkbox("Show Job ID", &settings::watermark::show_job_id);
+											gui->checkbox("Show CPU & RAM", &settings::watermark::show_cpu_ram);
+											gui->checkbox("Show IP & Port", &settings::watermark::show_ip_port);
+											gui->checkbox("Show Client ID", &settings::watermark::show_client_id);
+											gui->checkbox("Show Time", &settings::watermark::show_time);
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (style_subtab == 3)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Notifications", 1, 1);
+									{
+										gui->checkbox("Enabled", &settings::notifications::enabled);
+										if (settings::notifications::enabled)
+										{
+											gui->checkbox("Hit Notifications", &settings::notifications::hit);
+											gui->checkbox("Kill Notifications", &settings::notifications::kill);
+											gui->checkbox("Welcome Notification", &settings::notifications::welcome);
+											static const char* notify_positions[] = { "Top Right", "Top Left", "Bottom Right", "Bottom Left" };
+											gui->dropdown("Notify Position", &settings::notifications::position, notify_positions, IM_ARRAYSIZE(notify_positions));
+											gui->slider_float("Notify Duration", &settings::notifications::duration, 1.0f, 10.0f);
+										}
+
+										ImGui::Dummy(ImVec2(0, 4));
+
+										if (gui->button("Send Test Alert", 2))
+										{
+											notifications::add("This is a preview notification!");
+										}
+										gui->sameline();
+										if (gui->button("Send Hit Alert", 2))
+										{
+											notifications::add_hit("DummyPlayer", 45.0f);
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+						}
+						gui->end_content();
+					}
+				}
+				gui->end();
+				gui->sameline();
+			}
+
+			if (var->gui.current_section[8])
+			{
+				place_section_window("Configs", ImVec2(485.f, 497.f));
+				gui->set_next_window_size(ImVec2(485, 497), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(300, 320), GetIO().DisplaySize);
+				gui->begin("Configs", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+
+					{
+						static int config_subtab = 0;
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar));
+						gui->begin_group();
+						{
+							gui->sub_section("Configs", 0, config_subtab, 2);
+							gui->sub_section("Other", 1, config_subtab, 2);
+						}
+						gui->end_group();
+
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + elements->section.height - 1));
+						gui->begin_content();
+						{
+							static char new_config_name[64] = "";
+							static int selected_cfg_index = -1;
+
+							std::vector<config::config_info_t> cfg_list = config::get_config_list();
+
+							if (config_subtab == 0)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Configs", 1, 2);
+									{
+										gui->push_font(var->font.tahoma);
+										if (cfg_list.empty())
+										{
+											gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+											TextUnformatted("No configs found. Create one below!");
+											gui->pop_style_color();
+										}
+										else
+										{
+											for (size_t i = 0; i < cfg_list.size(); i++)
+											{
+												bool is_selected = (selected_cfg_index == (int)i);
+												if (is_selected)
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+												else
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+
+												std::string display_name = cfg_list[i].name;
+												ImVec2 text_size = CalcTextSize(display_name.c_str());
+												float avail_w = GetContentRegionAvail().x;
+												float center_pos_x = (avail_w - text_size.x) * 0.5f;
+												if (center_pos_x > 0)
+													SetCursorPosX(center_pos_x);
+
+												draw->text_outline(display_name.c_str());
+												if (IsItemClicked())
+												{
+													selected_cfg_index = (int)i;
+													strncpy_s(new_config_name, cfg_list[i].name.c_str(), sizeof(new_config_name) - 1);
+												}
+
+												gui->pop_style_color();
+
+												ImVec2 item_max = GetItemRectMax();
+												float win_min_x = GetWindowPos().x + elements->widgets.padding.x;
+												float win_max_x = GetWindowPos().x + GetWindowWidth() - elements->widgets.padding.x;
+												float line_y = item_max.y + 4.0f;
+												draw->line(GetWindowDrawList(), ImVec2(win_min_x, line_y), ImVec2(win_max_x, line_y), draw->get_clr(clr->window.stroke));
+												SetCursorPosY(GetCursorPosY() + 7.0f);
+											}
+										}
+										gui->pop_font();
+									}
+									gui->end_child();
+
+									gui->begin_child("Actions", 1, 2);
+									{
+										gui->text_field("##configname", new_config_name, sizeof(new_config_name));
+
+										if (gui->button("Create", 2))
+										{
+											if (strlen(new_config_name) > 0)
+											{
+												config::save_config(new_config_name);
+												cfg_list = config::get_config_list();
+												notifications::add("Config Created & Saved!");
+											}
+										}
+										gui->sameline();
+										if (gui->button("Delete", 2))
+										{
+											if (selected_cfg_index >= 0 && selected_cfg_index < (int)cfg_list.size())
+											{
+												config::delete_config(cfg_list[selected_cfg_index].name);
+												cfg_list = config::get_config_list();
+												selected_cfg_index = -1;
+												notifications::add("Config Deleted!");
+											}
+										}
+
+										if (gui->button("Load", 2))
+										{
+											if (selected_cfg_index >= 0 && selected_cfg_index < (int)cfg_list.size())
+											{
+												if (settings::config_system::disable_confirmations)
+												{
+													config::load_config(cfg_list[selected_cfg_index].name);
+													notifications::add("Config Loaded: " + cfg_list[selected_cfg_index].name);
+												}
+												else
+												{
+													pending_load_config_name = cfg_list[selected_cfg_index].name;
+													is_overwrite_confirmation = false;
+													show_load_confirmation = true;
+												}
+											}
+										}
+										gui->sameline();
+										if (gui->button("Overwrite", 2))
+										{
+											std::string target_cfg = (strlen(new_config_name) > 0) ? new_config_name : ((selected_cfg_index >= 0 && selected_cfg_index < (int)cfg_list.size()) ? cfg_list[selected_cfg_index].name : "");
+											if (!target_cfg.empty())
+											{
+												if (settings::config_system::disable_confirmations)
+												{
+													config::save_config(target_cfg);
+													cfg_list = config::get_config_list();
+													notifications::add("Config Overwritten: " + target_cfg);
+												}
+												else
+												{
+													pending_load_config_name = target_cfg;
+													is_overwrite_confirmation = true;
+													show_load_confirmation = true;
+												}
+											}
+										}
+
+										if (gui->button("Auto Load", 1))
+										{
+											if (selected_cfg_index >= 0 && selected_cfg_index < (int)cfg_list.size())
+											{
+												config::set_autoload(cfg_list[selected_cfg_index].name);
+												notifications::add("Autoload Set: " + cfg_list[selected_cfg_index].name);
+											}
+										}
+
+										if (gui->button("Clear Autoload", 1))
+										{
+											config::clear_autoload();
+											notifications::add("Autoload Cleared!");
+										}
+
+										if (gui->button("Refresh", 1))
+										{
+											cfg_list = config::get_config_list();
+											notifications::add("Configs Refreshed!");
+										}
+
+										if (gui->button("Unload", 1))
+										{
+											if (settings::general::confirm_unload)
+											{
+												show_unload_confirmation = true;
+											}
+											else
+											{
+												notifications::add("Unloading...");
+												HWND overlay = (::render && ::render->detail) ? ::render->detail->window : nullptr;
+												std::thread([overlay]() {
+
+													Cheat::Features::SkyShader::Stop();
+													nativechams::Stop();
+													std::this_thread::sleep_for(std::chrono::milliseconds(150));
+													if (overlay && IsWindow(overlay)) {
+														ShowWindow(overlay, SW_HIDE);
+													}
+													HWND console = GetConsoleWindow();
+													if (console && IsWindow(console)) {
+														ShowWindow(console, SW_HIDE);
+													}
+													std::this_thread::sleep_for(std::chrono::milliseconds(50));
+													ExitProcess(0);
+												}).detach();
+											}
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (config_subtab == 1)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Config Options", 1, 1);
+									{
+										static const char* const preview_model_names[] = { "Arsenal", "Roblox Avatar", "Tung Tung Tung Sahur", "Custom (Resources)" };
+										gui->dropdown("Preview Model", &settings::misc::preview_model, preview_model_names, IM_ARRAYSIZE(preview_model_names));
+										if (settings::misc::preview_model == 3)
+										{
+											static char model_file_input[260] = "";
+											if (model_file_input[0] == '\0' && strlen(settings::misc::custom_model_path) > 0)
+											{
+												strncpy_s(model_file_input, settings::misc::custom_model_path, sizeof(model_file_input) - 1);
+											}
+											gui->text_field("Model File / Path##custom_model_input", model_file_input, sizeof(model_file_input));
+											if (gui->button("Load & Convert Model", 1))
+											{
+												if (strlen(model_file_input) > 0)
+												{
+													std::string saved_path, err_msg;
+													if (ModelViewer::ConvertAndSaveToResources(model_file_input, "", saved_path, err_msg))
+													{
+														strncpy_s(settings::misc::custom_model_path, saved_path.c_str(), sizeof(settings::misc::custom_model_path) - 1);
+														notifications::add("Model saved to Resources & loaded!");
+													}
+													else
+													{
+														notifications::add("Error: " + err_msg);
+													}
+												}
+											}
+										}
+										gui->checkbox("Sticky Preview", &settings::misc::sticky_preview);
+										gui->checkbox("Auto Rotate Preview", &ModelViewer::g_model_viewer.auto_rotate);
+										if (ModelViewer::g_model_viewer.auto_rotate)
+										{
+											gui->slider_float("Rotation Speed", &ModelViewer::g_model_viewer.rotate_speed, 0.1f, 3.0f);
+										}
+
+										gui->checkbox("Disable Confirmations", &settings::config_system::disable_confirmations);
+										gui->checkbox("Confirm on Unload", &settings::general::confirm_unload);
+										gui->checkbox("Disable Scroll Bars", &settings::misc::disable_scrollbars);
+										gui->checkbox("Bot Support", &settings::misc::bot_support);
+										if (settings::misc::bot_support)
+										{
+											gui->checkbox("Only Workspace.Bots", &settings::misc::only_workspace_bots);
+										}
+
+										if (gui->button("Export", 1))
+										{
+											config::export_config_to_clipboard();
+											notifications::add("Config exported to clipboard!");
+										}
+
+										if (gui->button("Import", 1))
+										{
+											config::import_config_from_clipboard();
+											notifications::add("Config imported from clipboard!");
+										}
+
+										if (gui->button("Open Config Folder", 1))
+										{
+											ShellExecuteA(NULL, "open", config::get_config_directory().c_str(), NULL, NULL, SW_SHOWNORMAL);
+										}
+
+										if (gui->button("Open Resources Folder", 1))
+										{
+											config::ensure_resources_directory();
+											ShellExecuteA(NULL, "open", config::get_resources_directory().c_str(), NULL, NULL, SW_SHOWNORMAL);
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+						}
+						gui->end_content();
+					}
+
+				}
+				gui->end();
+				gui->sameline();
+			}
+
+			if (var->gui.current_section[7])
+			{
+				place_section_window("Waypoints", ImVec2(360.f, 420.f));
+				gui->set_next_window_size(ImVec2(360, 420), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(260, 260), GetIO().DisplaySize);
+				gui->begin("Waypoints", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+
+					{
+						static int waypoints_subtab = 0;
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar));
+						gui->begin_group();
+						{
+							gui->sub_section("Waypoints", 0, waypoints_subtab, 2);
+							gui->sub_section("Profiles", 1, waypoints_subtab, 2);
+						}
+						gui->end_group();
+
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + elements->section.height - 1));
+						gui->begin_content();
+						{
+							if (waypoints_subtab == 0)
+							{
+								static char new_wp_name[64] = "Base";
+								static int selected_wp_idx = -1;
+
+								std::vector<waypoints::Waypoint>& wps = waypoints::get_active_waypoints();
+
+								float controls_height = 103.f;
+								float total_avail = GetWindowHeight() - elements->content.padding.y * 2.f;
+								float saved_wp_height = total_avail - controls_height - elements->content.spacing.y;
+
+								gui->begin_group();
+								{
+									gui->begin_child("Saved Waypoints", 1, 1, ImVec2(0, saved_wp_height));
+									{
+										gui->push_font(var->font.tahoma);
+										if (!wps.empty())
+										{
+											math::vector3 local_pos{ 0.f, 0.f, 0.f };
+											cache::entity_t local_ent = cache::get_local_player();
+											if (local_ent.humanoid_root_part.address)
+											{
+												rbx::c_instance hrp(local_ent.humanoid_root_part.address);
+												local_pos = hrp.get_primitive().get_position();
+											}
+
+											for (size_t i = 0; i < wps.size(); i++)
+											{
+												bool is_sel = (selected_wp_idx == (int)i);
+												if (is_sel)
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+												else
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+
+												float dist = (wps[i].pos - local_pos).length();
+												std::stringstream ss;
+												ss << wps[i].name << " [" << (int)wps[i].pos.x << ", " << (int)wps[i].pos.y << ", " << (int)wps[i].pos.z << "] (" << (int)dist << "m)";
+												std::string line = ss.str();
+
+												ImVec2 sz = CalcTextSize(line.c_str());
+												float avail_w = GetContentRegionAvail().x;
+												float cx = (avail_w - sz.x) * 0.5f;
+												if (cx > 0) SetCursorPosX(cx);
+
+												draw->text_outline(line.c_str());
+												if (IsItemClicked())
+												{
+													selected_wp_idx = (int)i;
+													strncpy_s(new_wp_name, wps[i].name.c_str(), sizeof(new_wp_name) - 1);
+												}
+
+												gui->pop_style_color();
+											}
+										}
+										gui->pop_font();
+									}
+									gui->end_child();
+
+									gui->begin_child("Waypoint Controls", 1, 1, ImVec2(0, controls_height));
+									{
+										gui->text_field("##wp_name_field", new_wp_name, sizeof(new_wp_name));
+
+										if (gui->button("Add Current Pos", 2))
+										{
+											math::vector3 local_pos{ 0.f, 0.f, 0.f };
+											cache::entity_t local_ent = cache::get_local_player();
+											if (local_ent.humanoid_root_part.address)
+											{
+												rbx::c_instance hrp(local_ent.humanoid_root_part.address);
+												local_pos = hrp.get_primitive().get_position();
+											}
+											else if (game::camera != 0)
+											{
+												rbx::c_primitive cam(game::camera);
+												local_pos = cam.get_position();
+											}
+
+											uint64_t pid = 0, gid = 0;
+											if (game::datamodel && game::datamodel->address >= 0x10000)
+											{
+												pid = memory->read<uint64_t>(game::datamodel->address + Offsets::DataModel::PlaceId);
+												gid = memory->read<uint64_t>(game::datamodel->address + Offsets::DataModel::GameId);
+											}
+
+											waypoints::add_waypoint(new_wp_name, local_pos, gid, pid);
+											selected_wp_idx = (int)wps.size() - 1;
+											notifications::add("Waypoint Added: " + std::string(new_wp_name));
+										}
+										gui->sameline();
+										if (gui->button("Teleport to Waypoint", 2))
+										{
+											if (selected_wp_idx >= 0 && selected_wp_idx < (int)wps.size())
+											{
+												if (waypoints::teleport_to_waypoint((size_t)selected_wp_idx))
+												{
+													notifications::add("Teleported to " + wps[selected_wp_idx].name);
+												}
+												else
+												{
+													notifications::add("Teleport failed (local player not ready)");
+												}
+											}
+										}
+
+										if (gui->button("Delete Waypoint", 2))
+										{
+											if (selected_wp_idx >= 0 && selected_wp_idx < (int)wps.size())
+											{
+												waypoints::remove_waypoint((size_t)selected_wp_idx);
+												selected_wp_idx = -1;
+												notifications::add("Waypoint Deleted!");
+											}
+										}
+										gui->sameline();
+										if (gui->button("Clear All", 2))
+										{
+											waypoints::clear_waypoints();
+											selected_wp_idx = -1;
+											notifications::add("All Waypoints Cleared!");
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (waypoints_subtab == 1)
+							{
+								static char profile_name[64] = "default";
+								static int selected_profile_idx = -1;
+								std::vector<std::string> profiles = waypoints::get_profile_list();
+
+								gui->begin_group();
+								{
+									gui->begin_child("Profiles", 1, 2);
+									{
+										gui->push_font(var->font.tahoma);
+										if (profiles.empty())
+										{
+											gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+											TextUnformatted("No profiles found. Save one below!");
+											gui->pop_style_color();
+										}
+										else
+										{
+											for (size_t i = 0; i < profiles.size(); i++)
+											{
+												bool is_sel = (selected_profile_idx == (int)i);
+												if (is_sel)
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+												else
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+
+												std::string disp = profiles[i];
+												ImVec2 sz = CalcTextSize(disp.c_str());
+												float avail_w = GetContentRegionAvail().x;
+												float cx = (avail_w - sz.x) * 0.5f;
+												if (cx > 0) SetCursorPosX(cx);
+
+												draw->text_outline(disp.c_str());
+												if (IsItemClicked())
+												{
+													selected_profile_idx = (int)i;
+													strncpy_s(profile_name, profiles[i].c_str(), sizeof(profile_name) - 1);
+												}
+
+												gui->pop_style_color();
+
+												ImVec2 item_max = GetItemRectMax();
+												float win_min_x = GetWindowPos().x + elements->widgets.padding.x;
+												float win_max_x = GetWindowPos().x + GetWindowWidth() - elements->widgets.padding.x;
+												float line_y = item_max.y + 4.0f;
+												draw->line(GetWindowDrawList(), ImVec2(win_min_x, line_y), ImVec2(win_max_x, line_y), draw->get_clr(clr->window.stroke));
+												SetCursorPosY(GetCursorPosY() + 7.0f);
+											}
+										}
+										gui->pop_font();
+									}
+									gui->end_child();
+
+									gui->begin_child("Actions", 1, 2);
+									{
+										gui->text_field("##profile_name_field", profile_name, sizeof(profile_name));
+
+										if (gui->button("Save Profile", 2))
+										{
+											if (strlen(profile_name) > 0)
+											{
+												waypoints::save_profile(profile_name);
+												profiles = waypoints::get_profile_list();
+												notifications::add("Profile Saved: " + std::string(profile_name));
+											}
+										}
+										gui->sameline();
+										if (gui->button("Load Profile", 2))
+										{
+											if (selected_profile_idx >= 0 && selected_profile_idx < (int)profiles.size())
+											{
+												waypoints::load_profile(profiles[selected_profile_idx]);
+												notifications::add("Profile Loaded: " + profiles[selected_profile_idx]);
+											}
+										}
+
+										if (gui->button("Save for Game", 2))
+										{
+											if (waypoints::save_game_waypoints())
+												notifications::add("Saved waypoints for current game!");
+											else
+												notifications::add("Failed: Not in game");
+										}
+										gui->sameline();
+										if (gui->button("Load for Game", 2))
+										{
+											if (waypoints::load_game_waypoints())
+												notifications::add("Loaded waypoints for current game!");
+											else
+												notifications::add("Failed: No profile for current game");
+										}
+
+										if (gui->button("Delete Profile", 2))
+										{
+											if (selected_profile_idx >= 0 && selected_profile_idx < (int)profiles.size())
+											{
+												waypoints::delete_profile(profiles[selected_profile_idx]);
+												profiles = waypoints::get_profile_list();
+												selected_profile_idx = -1;
+												notifications::add("Profile Deleted!");
+											}
+										}
+										gui->sameline();
+										if (gui->button("Open Folder", 2))
+										{
+											ShellExecuteA(NULL, "open", waypoints::get_waypoints_directory().c_str(), NULL, NULL, SW_SHOWNORMAL);
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+						}
+						gui->end_content();
+					}
+				}
+				gui->end();
+				gui->sameline();
+			}
+			else
+			{
+				s_style_was_open = false;
+			}
+
+			if (var->gui.current_section[6])
+			{
+				place_section_window("Server Browser", ImVec2(540.f, 600.f));
+				gui->set_next_window_size(ImVec2(540, 600), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(420, 380), GetIO().DisplaySize);
+				gui->begin("Server Browser", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+
+					{
+						static int server_subtab = 0;
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar));
+						gui->begin_group();
+						{
+							gui->sub_section("Servers", 0, server_subtab, 2);
+							gui->sub_section("Join", 1, server_subtab, 2);
+						}
+						gui->end_group();
+
+						if (serverbrowser::browser->input_place_id[0] == '\0' || (serverbrowser::browser->all_servers.empty() && !serverbrowser::browser->is_loading))
+						{
+							serverbrowser::browser->refresh_current_game();
+							uint64_t pid = serverbrowser::browser->get_target_place_id();
+							if (pid > 0 && serverbrowser::browser->all_servers.empty() && !serverbrowser::browser->is_loading)
+							{
+								serverbrowser::browser->cursor_history.clear();
+								serverbrowser::browser->current_page = 1;
+								serverbrowser::browser->fetch_servers_async(pid);
+							}
+						}
+
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + elements->section.height - 1));
+						gui->begin_content();
+						{
+							if (server_subtab == 0)
+							{
+								float controls_height = 115.f;
+								float total_avail = GetWindowHeight() - elements->content.padding.y * 2.f;
+								float list_height = total_avail - controls_height - elements->content.spacing.y;
+
+								gui->begin_group();
+								{
+									gui->begin_child("Server List", 1, 1, ImVec2(0, list_height));
+									{
+										gui->push_font(var->font.tahoma);
+										std::lock_guard<std::mutex> lock(serverbrowser::browser->mtx);
+
+										if (serverbrowser::browser->is_loading)
+										{
+											gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+											TextUnformatted(serverbrowser::browser->status_message.c_str());
+											gui->pop_style_color();
+										}
+										else if (serverbrowser::browser->filtered_servers.empty())
+										{
+											if (!serverbrowser::browser->status_message.empty() && serverbrowser::browser->status_message != "Ready")
+											{
+												gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+												TextUnformatted(serverbrowser::browser->status_message.c_str());
+												gui->pop_style_color();
+												ImGui::Dummy(ImVec2(0, 4));
+											}
+
+											gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+											if (serverbrowser::browser->all_servers.empty())
+											{
+												TextUnformatted("Click 'Rescan Servers' to scan for active servers.");
+											}
+											else
+											{
+												TextUnformatted("No servers match the active filters.");
+											}
+											gui->pop_style_color();
+										}
+										else
+										{
+											uint64_t current_pid = serverbrowser::browser->get_target_place_id();
+											std::string active_jid = serverbrowser::browser->active_job_id;
+
+											for (size_t i = 0; i < serverbrowser::browser->filtered_servers.size(); i++)
+											{
+												const auto& s = serverbrowser::browser->filtered_servers[i];
+												bool is_current = (!active_jid.empty() && s.id == active_jid);
+
+												std::stringstream title_ss;
+												title_ss << "#" << (i + 1) << " | " << s.playing << "/" << s.max_players << " Players";
+												if (s.ping > 0) title_ss << " | " << s.ping << "ms";
+												if (s.fps > 0.0f) title_ss << " | " << std::fixed << std::setprecision(0) << s.fps << " FPS";
+												if (is_current) title_ss << " [CURRENT]";
+
+												if (is_current)
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+												else
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text));
+
+												draw->text_outline(title_ss.str().c_str());
+												gui->pop_style_color();
+
+												std::string join_lbl = "Join##" + std::to_string(i);
+												std::string copy_lbl = "Copy ID##" + std::to_string(i);
+												std::string tele_lbl = "Script##" + std::to_string(i);
+
+												if (gui->button(join_lbl.c_str(), 3))
+												{
+													serverbrowser::browser->join_server(current_pid, s.id);
+												}
+												gui->sameline();
+												if (gui->button(copy_lbl.c_str(), 3))
+												{
+													serverbrowser::browser->copy_job_id(s.id);
+												}
+												gui->sameline();
+												if (gui->button(tele_lbl.c_str(), 3))
+												{
+													serverbrowser::browser->copy_teleport_script(current_pid, s.id);
+												}
+
+												ImGui::Dummy(ImVec2(0, 4));
+											}
+										}
+										gui->pop_font();
+									}
+									gui->end_child();
+
+									gui->begin_child("Controls & Filter", 1, 1, ImVec2(0, controls_height));
+									{
+										if (gui->button("Rescan Servers", 1))
+										{
+											serverbrowser::browser->refresh_current_game();
+											uint64_t pid = serverbrowser::browser->get_target_place_id();
+											if (pid > 0)
+											{
+												serverbrowser::browser->cursor_history.clear();
+												serverbrowser::browser->current_page = 1;
+												serverbrowser::browser->fetch_servers_async(pid);
+												notifications::add("Rescanning Place " + std::to_string(pid));
+											}
+											else
+											{
+												notifications::add("No active Place ID found");
+											}
+										}
+
+										gui->dropdown("Sort Order", &serverbrowser::browser->sort_mode, server_sort_names, IM_ARRAYSIZE(server_sort_names));
+										if (IsItemDeactivatedAfterEdit() || IsItemEdited())
+										{
+											std::lock_guard<std::mutex> lock(serverbrowser::browser->mtx);
+											serverbrowser::browser->apply_filter();
+										}
+
+										gui->checkbox("Exclude Full Servers", &serverbrowser::browser->exclude_full);
+										if (IsItemEdited())
+										{
+											std::lock_guard<std::mutex> lock(serverbrowser::browser->mtx);
+											serverbrowser::browser->apply_filter();
+										}
+
+										if (serverbrowser::browser->current_page > 1)
+										{
+											if (gui->button("<< Prev Page", 2))
+											{
+												serverbrowser::browser->prev_page();
+											}
+											gui->sameline();
+										}
+
+										if (!serverbrowser::browser->next_cursor.empty())
+										{
+											if (gui->button("Next Page >>", 2))
+											{
+												serverbrowser::browser->next_page();
+											}
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (server_subtab == 1)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Quick Join by Job ID", 1, 1);
+									{
+										static char custom_job_id[128] = "";
+										gui->push_font(var->font.tahoma);
+										gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+										TextUnformatted("Direct Connect to Server Instance:");
+										gui->pop_style_color();
+										gui->pop_font();
+
+										gui->text_field("##custom_job_id_input", custom_job_id, sizeof(custom_job_id));
+
+										if (gui->button("Join via Job ID", 2))
+										{
+											uint64_t pid = strtoull(serverbrowser::browser->input_place_id, nullptr, 10);
+											if (pid > 0 && strlen(custom_job_id) > 0)
+											{
+												serverbrowser::browser->join_server(pid, custom_job_id);
+											}
+											else
+											{
+												notifications::add("Enter valid Place ID & Job ID");
+											}
+										}
+										gui->sameline();
+										if (gui->button("Copy Teleport Code", 2))
+										{
+											uint64_t pid = strtoull(serverbrowser::browser->input_place_id, nullptr, 10);
+											if (pid > 0 && strlen(custom_job_id) > 0)
+											{
+												serverbrowser::browser->copy_teleport_script(pid, custom_job_id);
+											}
+										}
+
+										ImGui::Dummy(ImVec2(0, 10));
+
+										gui->push_font(var->font.tahoma);
+										gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+										TextUnformatted("Current Session Info:");
+										gui->pop_style_color();
+
+										std::stringstream info_ss;
+										info_ss << "Active Place ID: " << serverbrowser::browser->active_place_id << "\n";
+										info_ss << "Active Job ID:\n" << (serverbrowser::browser->active_job_id.empty() ? "None / Not in Game" : serverbrowser::browser->active_job_id) << "\n";
+										info_ss << "Status: " << serverbrowser::browser->status_message;
+
+										gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text_inactive));
+										TextUnformatted(info_ss.str().c_str());
+										gui->pop_style_color();
+
+										if (!serverbrowser::browser->active_job_id.empty())
+										{
+											if (gui->button("Copy Current Job ID", 2))
+											{
+												serverbrowser::browser->copy_job_id(serverbrowser::browser->active_job_id);
+											}
+											gui->sameline();
+											if (gui->button("Rejoin Current Server", 2))
+											{
+												serverbrowser::browser->join_server(serverbrowser::browser->active_place_id, serverbrowser::browser->active_job_id);
+											}
+										}
+
+										gui->pop_font();
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+						}
+						gui->end_content();
+					}
+				}
+				gui->end();
+				gui->sameline();
+			}
+
+			if (var->gui.current_section[9])
+			{
+				place_section_window("NPC Manager", ImVec2(380.f, 420.f));
+				gui->set_next_window_size(ImVec2(380, 420), ImGuiCond_Once);
+				gui->set_next_window_size_constraints(ImVec2(300, 320), GetIO().DisplaySize);
+				gui->begin("NPC Manager", nullptr, var->window.flags);
+				{
+					draw->window_decorations();
+
+					{
+						static int npc_subtab = 0;
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar));
+						gui->begin_group();
+						{
+							gui->sub_section("NPC Paths", 0, npc_subtab, 2);
+							gui->sub_section("Settings", 1, npc_subtab, 2);
+						}
+						gui->end_group();
+
+						gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + elements->section.height - 1));
+						gui->begin_content();
+						{
+							if (npc_subtab == 0)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("Configured Paths", 1, 2);
+									{
+										gui->push_font(var->font.tahoma);
+										if (!settings::playerlist::active_npc_paths.empty())
+										{
+											static std::string selected_path = "";
+											std::vector<std::string> path_vec(settings::playerlist::active_npc_paths.begin(), settings::playerlist::active_npc_paths.end());
+											for (size_t i = 0; i < path_vec.size(); i++)
+											{
+												bool is_sel = (selected_path == path_vec[i]);
+												if (is_sel)
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->accent));
+												else
+													gui->push_style_color(ImGuiCol_Text, draw->get_clr(clr->widgets.text));
+
+												draw->text_outline(path_vec[i].c_str());
+												if (IsItemClicked())
+												{
+													selected_path = path_vec[i];
+													strncpy_s(settings::playerlist::npc_path_input, path_vec[i].c_str(), sizeof(settings::playerlist::npc_path_input) - 1);
+												}
+
+												gui->pop_style_color();
+
+												ImVec2 item_max = GetItemRectMax();
+												float win_min_x = GetWindowPos().x + elements->widgets.padding.x;
+												float win_max_x = GetWindowPos().x + GetWindowWidth() - elements->widgets.padding.x;
+												float line_y = item_max.y + 4.0f;
+												draw->line(GetWindowDrawList(), ImVec2(win_min_x, line_y), ImVec2(win_max_x, line_y), draw->get_clr(clr->window.stroke));
+												SetCursorPosY(GetCursorPosY() + 7.0f);
+											}
+										}
+										gui->pop_font();
+									}
+									gui->end_child();
+
+									gui->begin_child("Path Actions", 1, 2);
+									{
+										gui->text_field("##npc_path_in", settings::playerlist::npc_path_input, sizeof(settings::playerlist::npc_path_input));
+
+										if (gui->button("Add Path", 2))
+										{
+											if (strlen(settings::playerlist::npc_path_input) > 0)
+											{
+												settings::playerlist::active_npc_paths.insert(settings::playerlist::npc_path_input);
+												notifications::add("NPC Path Added: " + std::string(settings::playerlist::npc_path_input));
+											}
+										}
+										gui->sameline();
+										if (gui->button("Remove Path", 2))
+										{
+											if (strlen(settings::playerlist::npc_path_input) > 0)
+											{
+												settings::playerlist::active_npc_paths.erase(settings::playerlist::npc_path_input);
+												notifications::add("NPC Path Removed");
+											}
+										}
+
+										if (gui->button("Clear All Paths", 1))
+										{
+											settings::playerlist::active_npc_paths.clear();
+											notifications::add("All NPC Paths Cleared!");
+										}
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+							else if (npc_subtab == 1)
+							{
+								gui->begin_group();
+								{
+									gui->begin_child("NPC Options", 1, 1);
+									{
+										gui->checkbox("Bot Support", &settings::misc::bot_support);
+										gui->checkbox("Only Workspace Bots", &settings::misc::only_workspace_bots);
+									}
+									gui->end_child();
+								}
+								gui->end_group();
+							}
+						}
+						gui->end_content();
+					}
+				}
+				gui->end();
+				gui->sameline();
+			}
+	}
+
+		var->window.width = GetCurrentWindow()->ContentSize.x + style->ItemSpacing.x;
+
+		if (IsMouseHoveringRect(pos, pos + size))
+			SetWindowFocus();
+	}
+	gui->end();
+	gui->pop_style_var();
+	}
+
+	if (show_load_confirmation)
+	{
+		gui->set_next_window_size(ImVec2(270, 140), ImGuiCond_Always);
+		gui->set_next_window_pos(ImVec2(GetIO().DisplaySize.x * 0.5f - 135.f, GetIO().DisplaySize.y * 0.5f - 70.f), ImGuiCond_Appearing);
+		if (gui->begin("Confirmation", &show_load_confirmation, var->window.flags | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			ImDrawList* dl = GetWindowDrawList();
+			dl->PushClipRectFullScreen();
+			dl->AddRectFilled(ImVec2(0, 0), GetIO().DisplaySize, ImColor(0, 0, 0, 140));
+			dl->PopClipRect();
+
+			draw->window_decorations();
+			{
+				gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + 1));
+				gui->begin_content();
+				{
+					gui->begin_group();
+					{
+						gui->begin_child("##ConfirmBox", 1, 1, ImVec2(0, 0));
+						{
+							ImGui::Text(is_overwrite_confirmation ? "Overwrite Config?" : "Load Config?");
+
+							if (gui->button("Confirm", 2))
+							{
+								bool keep_disable = settings::config_system::disable_confirmations;
+								if (!pending_load_config_name.empty())
+								{
+									if (is_overwrite_confirmation)
+									{
+										config::save_config(pending_load_config_name);
+										notifications::add("Config Overwritten: " + pending_load_config_name);
+									}
+									else
+									{
+										config::load_config(pending_load_config_name);
+										notifications::add("Config Loaded: " + pending_load_config_name);
+									}
+								}
+								settings::config_system::disable_confirmations = keep_disable;
+								show_load_confirmation = false;
+							}
+							gui->sameline();
+							if (gui->button("Cancel", 2))
+							{
+								show_load_confirmation = false;
+							}
+
+							gui->checkbox("Disable Confirmations", &settings::config_system::disable_confirmations);
+						}
+						gui->end_child();
+					}
+					gui->end_group();
+				}
+				gui->end_content();
+			}
+		}
+		gui->end();
+	}
+
+	if (show_unload_confirmation)
+	{
+		gui->set_next_window_size(ImVec2(270, 105), ImGuiCond_Always);
+		gui->set_next_window_pos(ImVec2(GetIO().DisplaySize.x * 0.5f - 135.f, GetIO().DisplaySize.y * 0.5f - 52.5f), ImGuiCond_Appearing);
+		if (gui->begin("Confirmation##UnloadConfirmWindow", &show_unload_confirmation, var->window.flags | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			ImDrawList* dl = GetWindowDrawList();
+			dl->PushClipRectFullScreen();
+			dl->AddRectFilled(ImVec2(0, 0), GetIO().DisplaySize, ImColor(0, 0, 0, 140));
+			dl->PopClipRect();
+
+			draw->window_decorations();
+			{
+				gui->set_cursor_pos(elements->content.window_padding + ImVec2(0, var->window.titlebar + 1));
+				gui->begin_content();
+				{
+					gui->begin_group();
+					{
+						gui->begin_child("##UnloadConfirmBox", 1, 1, ImVec2(0, 0));
+						{
+							ImGui::Text("Unload Cheat?");
+
+							if (gui->button("Confirm##ConfirmUnloadBtn", 2))
+							{
+								show_unload_confirmation = false;
+								notifications::add("Unloading...");
+								HWND overlay = (::render && ::render->detail) ? ::render->detail->window : nullptr;
+								std::thread([overlay]() {
+
+									Cheat::Features::SkyShader::Stop();
+									nativechams::Stop();
+									std::this_thread::sleep_for(std::chrono::milliseconds(150));
+									if (overlay && IsWindow(overlay)) {
+										ShowWindow(overlay, SW_HIDE);
+									}
+									HWND console = GetConsoleWindow();
+									if (console && IsWindow(console)) {
+										ShowWindow(console, SW_HIDE);
+									}
+									std::this_thread::sleep_for(std::chrono::milliseconds(50));
+									ExitProcess(0);
+								}).detach();
+							}
+							gui->sameline();
+							if (gui->button("Cancel##CancelUnloadBtn", 2))
+							{
+								show_unload_confirmation = false;
+							}
+						}
+						gui->end_child();
+					}
+					gui->end_group();
+				}
+				gui->end_content();
+			}
+		}
+		gui->end();
+	}
+
+	explorer::explorer->render_decompiled_windows();
+}

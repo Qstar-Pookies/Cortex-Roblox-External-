@@ -1,0 +1,1361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="external">
+      <UniqueIdentifier>{2E3326E0-A157-5833-846E-F0503A4FBA53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\Clipper2Lib">
+      <UniqueIdentifier>{3598F577-0A11-5BA9-88FB-7D518C18CABB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\Clipper2Lib\include">
+      <UniqueIdentifier>{B9A76374-2887-5FE3-9FFF-3B8BCD99D982}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\Clipper2Lib\include\clipper2">
+      <UniqueIdentifier>{D150D51F-64D9-5C4C-8FAC-2F3D6414B4B9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\Clipper2Lib\src">
+      <UniqueIdentifier>{14C4DD0C-E9FB-5D5B-A84E-F32C3858EFA8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\imgui">
+      <UniqueIdentifier>{E05AB954-68C1-5165-95BF-73248D028D95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\imgui\addons">
+      <UniqueIdentifier>{78EC97DA-29F5-5620-B654-9024559CD0E2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\lua">
+      <UniqueIdentifier>{9E74586A-35E7-573F-BA9A-A080A1C64652}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\nlohmann">
+      <UniqueIdentifier>{8BEEB0A1-F9D1-50E5-94DF-71B95F7CCBB2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\stb">
+      <UniqueIdentifier>{35D4466D-6DE8-57CF-923B-BB0297E218DF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\zstd">
+      <UniqueIdentifier>{FCB4F47B-6D84-5D23-A8EE-A9A20C6FF502}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\zstd\lib">
+      <UniqueIdentifier>{78A49DFB-C446-5687-8490-9487B542CB26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\zstd\lib\common">
+      <UniqueIdentifier>{BC118E0B-0EAF-5B96-A8C3-66905A5064C1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\zstd\lib\decompress">
+      <UniqueIdentifier>{23BBFB15-CAA8-58C4-AEED-5DC4F489CB59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{A86076CB-EDC7-5E41-8F11-E5F69C03EB61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game">
+      <UniqueIdentifier>{DA2F643B-40DC-5475-886B-F3CE05D00B31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game\cache">
+      <UniqueIdentifier>{E7CA60B9-D358-5658-AF45-2A18EC1A57C5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game\cache\bodyparts">
+      <UniqueIdentifier>{4F3FD805-DCCB-5FA6-9D07-0449AD6E03CC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game\cache\core">
+      <UniqueIdentifier>{14633914-9547-51A8-A2F7-8FD7226E89F5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game\game">
+      <UniqueIdentifier>{FEA6D25B-5790-55A0-9838-872A3D546CB6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game\math">
+      <UniqueIdentifier>{251ABBD1-B76E-56AF-8893-AF4272EE2E18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game\offsets">
+      <UniqueIdentifier>{0C06BC95-03C2-5A23-BC75-E09EEF5B28EB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\game\wallcheck">
+      <UniqueIdentifier>{BB73CF43-0C8C-51C1-9664-B07B0CBED95B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu">
+      <UniqueIdentifier>{8D522FCE-CFDA-50FF-881B-BD3929A6831E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\animations">
+      <UniqueIdentifier>{3B9AA7BC-763F-5FAD-8CDC-21E4A51B6953}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\assets">
+      <UniqueIdentifier>{1BFD5A74-B8D5-5B6B-8A3C-375483A61E8B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\assets\fonts">
+      <UniqueIdentifier>{4C1636DB-6560-52E5-BB8C-AA56DAF1597F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\assets\icons">
+      <UniqueIdentifier>{91853BD9-9CBA-55FF-811F-E1C86D333E1C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\editor">
+      <UniqueIdentifier>{12FDF7FE-D6A6-5429-9284-1C7CCD8614F5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\menu">
+      <UniqueIdentifier>{D4DE7576-8854-598B-B419-045712AA354C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\menu\data">
+      <UniqueIdentifier>{C0FF2FDE-8174-532D-A7B4-37B9A575D1E6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\menu\elements">
+      <UniqueIdentifier>{F2FC6942-C680-5F51-A47D-03D44DA22082}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\menu\settings">
+      <UniqueIdentifier>{9FCB4B08-192F-573A-9AC3-95B5E8C18BF9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\menu\render">
+      <UniqueIdentifier>{9D1ED6E3-9AED-52D6-A074-E98497843A5A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system">
+      <UniqueIdentifier>{9DCE1E8B-EB05-5081-9048-52953D0103B1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\logger">
+      <UniqueIdentifier>{FAFE6961-3C14-5E48-AA56-46F942D2C2E5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\memory">
+      <UniqueIdentifier>{54067527-B4E3-50D0-95D6-E88E81AF3229}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\protection">
+      <UniqueIdentifier>{5B289DAB-F6F8-551A-AD04-B854EAB6E85F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\protection\antiattach">
+      <UniqueIdentifier>{2D08A7F2-D47A-5E63-90CE-C925C35F0F49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\protection\antidebug">
+      <UniqueIdentifier>{C6A87903-6A3B-5947-8A3E-88FDF6D9330C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\protection\antidump">
+      <UniqueIdentifier>{6CB02140-39B9-563B-8F7A-550C99BCDDD8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\protection\encryption">
+      <UniqueIdentifier>{DF83EBAE-0990-5C46-AD72-6B2DF898B73E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\scanner">
+      <UniqueIdentifier>{17776CB5-09E4-53F2-9E9D-D047398701A6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\scanner\game">
+      <UniqueIdentifier>{6B548679-13E7-59DB-9AB8-ACBE16EF2D2C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\scanner\process">
+      <UniqueIdentifier>{809BFD50-07BF-5966-B247-4E67B8E9FD7B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\utility">
+      <UniqueIdentifier>{A4D40393-87C5-529A-8B7E-D564D67D6E41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\system\utility\creator">
+      <UniqueIdentifier>{81033319-E381-5154-9E6E-2984F5581CF2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks">
+      <UniqueIdentifier>{2A0DD8DD-90FC-511E-A9E5-87FEBDE9475E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat">
+      <UniqueIdentifier>{7F89645F-1997-586C-93F9-155B8471FE1E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\aimbot">
+      <UniqueIdentifier>{AC7E552D-2849-5D5D-A4FE-2A6B563988D1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\hbe">
+      <UniqueIdentifier>{8D8471D7-0526-5F02-85BB-5DEA6BABAEAA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\silent">
+      <UniqueIdentifier>{82986FC6-6BAA-5316-8C10-FFA2EA5AE8DA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\silent\camera">
+      <UniqueIdentifier>{54984018-B9E1-5A03-9337-AAB621939E3A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\silent\mouse">
+      <UniqueIdentifier>{A95366F4-74B8-555A-87D0-22B9C64233DB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\silent\raycast">
+      <UniqueIdentifier>{ECF5DB3B-B20E-5598-8E73-55750FC1927B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\silent\viewport">
+      <UniqueIdentifier>{7F7044C4-C85B-5080-8077-0C76FA110269}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\combat\trigger">
+      <UniqueIdentifier>{B7207DE5-57DD-5154-B84B-9E8CC7D3762D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits">
+      <UniqueIdentifier>{E8F159C9-BE25-5048-83B5-B38A9F9249E8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\audio">
+      <UniqueIdentifier>{19DD8BC6-B667-5B08-8C44-FEB2FB97BD77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\audio\hitsound">
+      <UniqueIdentifier>{13338888-7BD8-53B5-96F4-4600E4AAC55F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character">
+      <UniqueIdentifier>{A544A85B-45FB-5B02-A426-EF8F82DD80B8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\avatar">
+      <UniqueIdentifier>{7BEF7D41-5121-53A4-982C-97F468E2D7D0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\changer">
+      <UniqueIdentifier>{AF0CEE69-D2C2-5E36-AF3B-D8EAB6B015F9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\cosmetics">
+      <UniqueIdentifier>{679C8D56-248A-55E7-9736-7E5DBFD7D5CA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\dhskinchanger">
+      <UniqueIdentifier>{B64F8CC7-62EB-5A1B-A234-27C7836F0315}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\headless">
+      <UniqueIdentifier>{A9828691-EF6E-5E00-A347-E42ABB0FD355}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\korblox">
+      <UniqueIdentifier>{A89D43AC-95C9-5703-A989-58419E209B64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\materialchanger">
+      <UniqueIdentifier>{9051E73E-8C2F-5D6B-A25E-1C88D66BD321}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\recolor">
+      <UniqueIdentifier>{9DC2F9FC-A859-5DB5-883E-341DE3ECE073}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\character\skinchanger">
+      <UniqueIdentifier>{717A2381-4BB4-5C12-AF40-7ED88038F3EB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\environment">
+      <UniqueIdentifier>{3086B52E-5BAF-520C-B9FB-C8512C2CB9A6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\environment\btools">
+      <UniqueIdentifier>{3403A4B3-6DDA-5716-B8F2-C1FCFE03E42C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\environment\explorer">
+      <UniqueIdentifier>{F8F6A214-2E28-57AE-8C92-DA9CB1B630EC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\environment\skybox">
+      <UniqueIdentifier>{BBA8EC75-109C-5C89-8456-CFFDCFC76812}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\locomotion">
+      <UniqueIdentifier>{3CC8171A-BC48-5152-B899-C4BEDCDFDC2E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\locomotion\movement">
+      <UniqueIdentifier>{1F8AE06E-8F5F-50B6-8270-F3F49E9F8F1D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\locomotion\unified">
+      <UniqueIdentifier>{DAB7CD33-CDC1-5D3C-A546-6AA790EF4287}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\utility">
+      <UniqueIdentifier>{6CDDEDBC-244D-5DAF-9F1B-97F8CF68AA9B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\utility\freecam">
+      <UniqueIdentifier>{7CAFCDE9-831B-512C-BCBC-B63FC57081EA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\utility\freezeplayer">
+      <UniqueIdentifier>{DFF200A3-E3F4-504D-BBA3-4FEF4BDB3A57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\utility\auto_emote">
+      <UniqueIdentifier>{6B79D551-8E31-4FEA-BD65-3FE37A9DFB90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\utility\misc">
+      <UniqueIdentifier>{DCE1B973-390A-5A13-AFAB-25B1B231968D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\utility\npcsystem">
+      <UniqueIdentifier>{0B287586-411C-504F-96F2-AF472E0F770B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\exploits\utility\typingcheck">
+      <UniqueIdentifier>{1F3EA00B-33EE-54C1-A18C-5DF2FB52BF6D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau">
+      <UniqueIdentifier>{D1403E20-75B6-54D1-B4AF-CE1507BFA4E4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\bridge">
+      <UniqueIdentifier>{5B2FB000-5985-531F-B301-D71C4494B6EF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\drawing">
+      <UniqueIdentifier>{6181B610-8CC4-510A-9188-2B17F4B07D90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\gc">
+      <UniqueIdentifier>{AD2E9518-EABD-5D43-BD4F-697647EC8A01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\instance.new">
+      <UniqueIdentifier>{22DCA5DA-0F5E-5888-A8B4-63742F438BAE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\instance.new\callgate">
+      <UniqueIdentifier>{329068BD-A92D-51AB-A674-AA8B4C8B7C9C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\instance.new\creation">
+      <UniqueIdentifier>{4DBEAAED-9240-59B8-805F-470D97DFC501}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\instance.new\reflection">
+      <UniqueIdentifier>{1806138D-2656-57C9-AE81-D8718E7E2A48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\mcp">
+      <UniqueIdentifier>{EF942B27-239D-5330-9B8D-1E941A319705}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\mem">
+      <UniqueIdentifier>{C9F9D02E-60CA-5480-A4AC-C6CFA6537D36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\types">
+      <UniqueIdentifier>{CC3F34CC-F809-533F-A4A0-5D2C403DEA21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\luau\vm">
+      <UniqueIdentifier>{91E129A6-227A-559B-917E-470CFAE0B666}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system">
+      <UniqueIdentifier>{1ECF7EB8-F142-5D34-A5C6-1F7466020529}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\config">
+      <UniqueIdentifier>{E4FFF6A6-3C05-5B65-A73B-986C2106F057}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\keybind">
+      <UniqueIdentifier>{FFC6B4A6-03D6-5766-A79A-C17633EFC1EC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\notifications">
+      <UniqueIdentifier>{593EB170-B130-5D1E-9CE9-F248648BA826}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\performance">
+      <UniqueIdentifier>{D468D989-CD66-5AD7-BABA-CFB348B2F428}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\playerlist">
+      <UniqueIdentifier>{092EB8AE-8532-5AD2-820E-3720FBD84521}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\serverbrowser">
+      <UniqueIdentifier>{9FB7FB6B-A12F-561B-8307-FD4B7DAA230A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\settings">
+      <UniqueIdentifier>{BB119990-221A-510B-B5FA-A077D3ECD12B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\system\waypoints">
+      <UniqueIdentifier>{B20AD6E1-E17A-570E-8186-882E6D0641DD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals">
+      <UniqueIdentifier>{3283C890-35BC-5CA9-B256-C3E8ABC2A7AD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\chams">
+      <UniqueIdentifier>{E3754EB2-65A1-5D60-A1A2-635B762E3D28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\chams\native">
+      <UniqueIdentifier>{54686EDE-33E5-5EE7-8889-6EDAB3163890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\chams\memory">
+      <UniqueIdentifier>{54075004-FC36-5888-A778-E5D4F70D5C7F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\esp">
+      <UniqueIdentifier>{3D22C1C9-1A58-540F-A87B-37452E41A57A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\radar">
+      <UniqueIdentifier>{7A1F4C20-93B6-4E5D-8C11-2F6B0A9D4E71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\bullettracers">
+      <UniqueIdentifier>{C45E9B18-5D72-4A3F-9B60-8E1D3C7A5F22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\hit">
+      <UniqueIdentifier>{841C0D35-4E86-597A-BFDE-BFDCA32BF5E7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\lighting">
+      <UniqueIdentifier>{B4CB1C7C-F0AC-5095-A184-53CB7A9C6121}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\skyshader">
+      <UniqueIdentifier>{5C1D9E64-7B2A-4E0F-9C3D-2A7B45E21F88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\manager">
+      <UniqueIdentifier>{1472BB26-1DEC-5EFF-92BE-FD2F0BCD59C3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model">
+      <UniqueIdentifier>{00791E91-6B38-551A-8A1A-115C4102CED5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model\3d">
+      <UniqueIdentifier>{1A9D4D03-1699-57BE-BE96-BB997F1A438D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model\3d\parsers">
+      <UniqueIdentifier>{D6BA89C8-1688-591F-834B-6D54EC1BD31B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model\3d\texture">
+      <UniqueIdentifier>{359A4F41-A674-5D7B-9124-E7ADEE156B58}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model\custom">
+      <UniqueIdentifier>{68A28C75-270D-5D44-8EE0-3DCC17D0EEDF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model\custom\tung_tung">
+      <UniqueIdentifier>{B2C9434B-6876-568E-B057-97D892CFFEA0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model\default">
+      <UniqueIdentifier>{D0B1DB89-D33A-5F10-920C-BD37FEB8762D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hacks\visuals\model\gltf">
+      <UniqueIdentifier>{C2381701-6FEA-570A-9F0F-7041BCCD9884}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="external\Clipper2Lib\src\clipper.engine.cpp">
+      <Filter>external\Clipper2Lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\vm\script_bytecode.cpp">
+      <Filter>source\hacks\luau\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\vm\fission_embed.cpp">
+      <Filter>source\hacks\luau\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="external\Clipper2Lib\src\clipper.offset.cpp">
+      <Filter>external\Clipper2Lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="external\Clipper2Lib\src\clipper.rectclip.cpp">
+      <Filter>external\Clipper2Lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_draw.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_tables.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_impl_dx11.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_impl_win32.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_freetype.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\clip.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_widgets.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\addons\imgui_addons.cpp">
+      <Filter>external\imgui\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\addons\imgui_notification.cpp">
+      <Filter>external\imgui\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\cache\bodyparts\bodyparts.cpp">
+      <Filter>source\game\cache\bodyparts</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\cache\core\cache.cpp">
+      <Filter>source\game\cache\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\avatar\avatar.cpp">
+      <Filter>source\hacks\exploits\character\avatar</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\system\config\config.cpp">
+      <Filter>source\hacks\system\config</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\mcp\mcp_server.cpp">
+      <Filter>source\hacks\luau\mcp</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\environment\explorer\explorer.cpp">
+      <Filter>source\hacks\exploits\environment\explorer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\environment\explorer\explorertextures.cpp">
+      <Filter>source\hacks\exploits\environment\explorer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\combat\hbe\hbe.cpp">
+      <Filter>source\hacks\combat\hbe</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\system\keybind\keybind.cpp">
+      <Filter>source\hacks\system\keybind</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\utility\auto_emote\auto_emote.cpp">
+      <Filter>source\hacks\exploits\utility\auto_emote</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\utility\misc\misc.cpp">
+      <Filter>source\hacks\exploits\utility\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\locomotion\movement\movement.cpp">
+      <Filter>source\hacks\exploits\locomotion\movement</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\utility\freecam\freecam.cpp">
+      <Filter>source\hacks\exploits\utility\freecam</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\system\playerlist\playerlist.cpp">
+      <Filter>source\hacks\system\playerlist</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\combat\silent\mouse\mouse.cpp">
+      <Filter>source\hacks\combat\silent\mouse</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\combat\silent\viewport\viewport.cpp">
+      <Filter>source\hacks\combat\silent\viewport</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\combat\silent\camera\camera.cpp">
+      <Filter>source\hacks\combat\silent\camera</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\game\gamestate.cpp">
+      <Filter>source\game\game</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\combat\aimbot\aimbot.cpp">
+      <Filter>source\hacks\combat\aimbot</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\combat\trigger\trigger.cpp">
+      <Filter>source\hacks\combat\trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\esp\esp.cpp">
+      <Filter>source\hacks\visuals\esp</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\radar\radar.cpp">
+      <Filter>source\hacks\visuals\radar</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\bullettracers\bullettracers.cpp">
+      <Filter>source\hacks\visuals\bullettracers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\main.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system\memory\memory.cpp">
+      <Filter>source\system\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system\utility\creator\creator.cpp">
+      <Filter>source\system\utility\creator</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system\protection\antidebug\antidebug.cpp">
+      <Filter>source\system\protection\antidebug</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system\protection\antiattach\antiattach.cpp">
+      <Filter>source\system\protection\antiattach</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system\protection\antidump\antidump.cpp">
+      <Filter>source\system\protection\antidump</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\animations\animations.cpp">
+      <Filter>source\menu\animations</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\editor\editor.cpp">
+      <Filter>source\menu\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\render\render.cpp">
+      <Filter>source\menu\render</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\gui.cpp">
+      <Filter>source\menu\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\button.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\checkbox.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\child.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\coloredit.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\draw.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\dropdown.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\helpers.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\keybind.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\section.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\slider.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\table.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\textfield.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\menu\menu\elements\window.cpp">
+      <Filter>source\menu\menu\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system\scanner\game\game.cpp">
+      <Filter>source\system\scanner\game</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system\scanner\process\process.cpp">
+      <Filter>source\system\scanner\process</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\sdk.cpp">
+      <Filter>source\game</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\lighting\lighting.cpp">
+      <Filter>source\hacks\visuals\lighting</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\skyshader\skyshader.cpp">
+      <Filter>source\hacks\visuals\skyshader</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\korblox\korblox.cpp">
+      <Filter>source\hacks\exploits\character\korblox</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\headless\headless.cpp">
+      <Filter>source\hacks\exploits\character\headless</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\cosmetics\cosmetics.cpp">
+      <Filter>source\hacks\exploits\character\cosmetics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\recolor\recolor.cpp">
+      <Filter>source\hacks\exploits\character\recolor</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\materialchanger\materialchanger.cpp">
+      <Filter>source\hacks\exploits\character\materialchanger</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\utility\freezeplayer\freezeplayer.cpp">
+      <Filter>source\hacks\exploits\utility\freezeplayer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\utility\typingcheck\typingcheck.cpp">
+      <Filter>source\hacks\exploits\utility\typingcheck</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\environment\btools\btools.cpp">
+      <Filter>source\hacks\exploits\environment\btools</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\skinchanger\skinchanger.cpp">
+      <Filter>source\hacks\exploits\character\skinchanger</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\dhskinchanger\dhskinchanger.cpp">
+      <Filter>source\hacks\exploits\character\dhskinchanger</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\character\changer\changer.cpp">
+      <Filter>source\hacks\exploits\character\changer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\locomotion\unified\unifiedexploits.cpp">
+      <Filter>source\hacks\exploits\locomotion\unified</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\combat\silent\raycast\raycast.cpp">
+      <Filter>source\hacks\combat\silent\raycast</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\utility\npcsystem\npcsystem.cpp">
+      <Filter>source\hacks\exploits\utility\npcsystem</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\modelviewer.cpp">
+      <Filter>source\hacks\visuals\model</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\default\defaultmodel.cpp">
+      <Filter>source\hacks\visuals\model\default</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\custom\tung_tung\tung_tung_sahur_model.cpp">
+      <Filter>source\hacks\visuals\model\custom\tung_tung</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\gltf\gltfloader.cpp">
+      <Filter>source\hacks\visuals\model\gltf</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\3d\mainapi.cpp">
+      <Filter>source\hacks\visuals\model\3d</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\3d\parsers\objparser.cpp">
+      <Filter>source\hacks\visuals\model\3d\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\3d\parsers\mtlparser.cpp">
+      <Filter>source\hacks\visuals\model\3d\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\model\3d\texture\texturecache.cpp">
+      <Filter>source\hacks\visuals\model\3d\texture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\audio\hitsound\hitsounds.cpp">
+      <Filter>source\hacks\exploits\audio\hitsound</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\audio\hitsound\hitsoundsdata.cpp">
+      <Filter>source\hacks\exploits\audio\hitsound</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\memory\chams.cpp">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\memory\shader.cpp">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\memory\cache.cpp">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\memory\parser.cpp">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\memory\shader_chams.cpp">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\memory\chams_main.cpp">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\native\native.cpp">
+      <Filter>source\hacks\visuals\chams\native</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\hit\hit.cpp">
+      <Filter>source\hacks\visuals\hit</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\system\notifications\notifications.cpp">
+      <Filter>source\hacks\system\notifications</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\vm\vm.cpp">
+      <Filter>source\hacks\luau\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\bridge\bridge.cpp">
+      <Filter>source\hacks\luau\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\drawing\drawing.cpp">
+      <Filter>source\hacks\luau\drawing</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\gc\gc.cpp">
+      <Filter>source\hacks\luau\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\mem\mem.cpp">
+      <Filter>source\hacks\luau\mem</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\types\types.cpp">
+      <Filter>source\hacks\luau\types</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\instance.new\callgate\call_gate.cpp">
+      <Filter>source\hacks\luau\instance.new\callgate</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\instance.new\creation\instance_create.cpp">
+      <Filter>source\hacks\luau\instance.new\creation</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\instance.new\creation\instance_new.cpp">
+      <Filter>source\hacks\luau\instance.new\creation</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\luau\instance.new\reflection\reflect.cpp">
+      <Filter>source\hacks\luau\instance.new\reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\exploits\environment\skybox\skybox.cpp">
+      <Filter>source\hacks\exploits\environment\skybox</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\manager\manager.cpp">
+      <Filter>source\hacks\visuals\manager</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lapi.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lauxlib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lbaselib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lcode.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lcorolib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lctype.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\ldblib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\ldebug.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\ldo.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\ldump.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lfunc.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lgc.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\linit.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\liolib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\llex.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lmathlib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lmem.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\loadlib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lobject.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lopcodes.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\loslib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lparser.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lstate.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lstring.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lstrlib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\ltable.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\ltablib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\ltm.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lundump.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lutf8lib.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lvm.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="external\lua\lzio.c">
+      <Filter>external\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\system\performance\performance.cpp">
+      <Filter>source\hacks\system\performance</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\common\debug.c">
+      <Filter>external\zstd\lib\common</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\common\entropy_common.c">
+      <Filter>external\zstd\lib\common</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\common\error_private.c">
+      <Filter>external\zstd\lib\common</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\common\fse_decompress.c">
+      <Filter>external\zstd\lib\common</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\common\xxhash.c">
+      <Filter>external\zstd\lib\common</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\common\zstd_common.c">
+      <Filter>external\zstd\lib\common</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\decompress\huf_decompress.c">
+      <Filter>external\zstd\lib\decompress</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\decompress\zstd_ddict.c">
+      <Filter>external\zstd\lib\decompress</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\decompress\zstd_decompress.c">
+      <Filter>external\zstd\lib\decompress</Filter>
+    </ClCompile>
+    <ClCompile Include="external\zstd\lib\decompress\zstd_decompress_block.c">
+      <Filter>external\zstd\lib\decompress</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\system\waypoints\waypoints.cpp">
+      <Filter>source\hacks\system\waypoints</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\system\serverbrowser\serverbrowser.cpp">
+      <Filter>source\hacks\system\serverbrowser</Filter>
+    </ClCompile>
+    <ClCompile Include="source\hacks\visuals\chams\highlight\highlight.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.core.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\utility\creator\creator.h">
+      <Filter>source\system\utility\creator</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\combat\trigger\trigger.h">
+      <Filter>source\hacks\combat\trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\utility\freecam\freecam.h">
+      <Filter>source\hacks\exploits\utility\freecam</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\locomotion\unified\unifiedexploits.h">
+      <Filter>source\hacks\exploits\locomotion\unified</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\gc\gc.h">
+      <Filter>source\hacks\luau\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\vm\script_bytecode.h">
+      <Filter>source\hacks\luau\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\vm\fission_embed.h">
+      <Filter>source\hacks\luau\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.engine.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.export.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.minkowski.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.offset.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.rectclip.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\Clipper2Lib\include\clipper2\clipper.version.h">
+      <Filter>external\Clipper2Lib\include\clipper2</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imconfig.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imgui.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imgui_impl_dx11.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imgui_impl_win32.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\animation.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\clip.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imgui_internal.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imstb_rectpack.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imstb_textedit.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imstb_truetype.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nlohmann\json.hpp">
+      <Filter>external\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nlohmann\json.hpp">
+      <Filter>external\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="external\stb\stb_image.h">
+      <Filter>external\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\settings\settings.h">
+      <Filter>source\hacks\system\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\lighting\lightinghelpers.h">
+      <Filter>source\hacks\visuals\lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\cache\bodyparts\bodyparts.h">
+      <Filter>source\game\cache\bodyparts</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\cache\core\cache.h">
+      <Filter>source\game\cache\core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\combat\aimbot\aimbot.h">
+      <Filter>source\hacks\combat\aimbot</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\config\config.h">
+      <Filter>source\hacks\system\config</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\esp\esp.h">
+      <Filter>source\hacks\visuals\esp</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\chams.h">
+      <Filter>source\hacks\visuals\chams</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\memory\NaziBridge.h">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\memory\chams_main.h">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\memory\chams.h">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\memory\shader.h">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\memory\cache.h">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\memory\parser.h">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\memory\shader_chams.h">
+      <Filter>source\hacks\visuals\chams\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\chams\native\native.h">
+      <Filter>source\hacks\visuals\chams\native</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\avatar\avatar.h">
+      <Filter>source\hacks\exploits\character\avatar</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\environment\explorer\explorer.h">
+      <Filter>source\hacks\exploits\environment\explorer</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\combat\hbe\hbe.h">
+      <Filter>source\hacks\combat\hbe</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\keybind\keybind.h">
+      <Filter>source\hacks\system\keybind</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\utility\npcsystem\npcsystem.h">
+      <Filter>source\hacks\exploits\utility\npcsystem</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\manager\manager.h">
+      <Filter>source\hacks\visuals\manager</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\modelviewer.h">
+      <Filter>source\hacks\visuals\model</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\gltf\gltfloader.h">
+      <Filter>source\hacks\visuals\model\gltf</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\3d\mainapi.hpp">
+      <Filter>source\hacks\visuals\model\3d</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\3d\parsers\objparser.hpp">
+      <Filter>source\hacks\visuals\model\3d\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\3d\parsers\mtlparser.hpp">
+      <Filter>source\hacks\visuals\model\3d\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\3d\texture\texturecache.hpp">
+      <Filter>source\hacks\visuals\model\3d\texture</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\default\defaultmodel.h">
+      <Filter>source\hacks\visuals\model\default</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\model\custom\tung_tung\tung_tung_sahur_model.h">
+      <Filter>source\hacks\visuals\model\custom\tung_tung</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\utility\auto_emote\auto_emote.h">
+      <Filter>source\hacks\exploits\utility\auto_emote</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\utility\misc\misc.h">
+      <Filter>source\hacks\exploits\utility\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\utility\misc\animation.h">
+      <Filter>source\hacks\exploits\utility\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\korblox\korblox.h">
+      <Filter>source\hacks\exploits\character\korblox</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\headless\headless.h">
+      <Filter>source\hacks\exploits\character\headless</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\cosmetics\cosmetics.h">
+      <Filter>source\hacks\exploits\character\cosmetics</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\recolor\recolor.h">
+      <Filter>source\hacks\exploits\character\recolor</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\materialchanger\materialchanger.h">
+      <Filter>source\hacks\exploits\character\materialchanger</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\utility\freezeplayer\freezeplayer.h">
+      <Filter>source\hacks\exploits\utility\freezeplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\utility\typingcheck\typingcheck.h">
+      <Filter>source\hacks\exploits\utility\typingcheck</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\environment\btools\btools.h">
+      <Filter>source\hacks\exploits\environment\btools</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\skinchanger\skinchanger.h">
+      <Filter>source\hacks\exploits\character\skinchanger</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\dhskinchanger\dhskinchanger.h">
+      <Filter>source\hacks\exploits\character\dhskinchanger</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\character\changer\changer.h">
+      <Filter>source\hacks\exploits\character\changer</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\locomotion\movement\movement.h">
+      <Filter>source\hacks\exploits\locomotion\movement</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\playerlist\playerlist.h">
+      <Filter>source\hacks\system\playerlist</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\combat\silent\mouse\mouse.h">
+      <Filter>source\hacks\combat\silent\mouse</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\combat\silent\viewport\viewport.h">
+      <Filter>source\hacks\combat\silent\viewport</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\combat\silent\camera\camera.h">
+      <Filter>source\hacks\combat\silent\camera</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\cache\core\frame.h">
+      <Filter>source\game\cache\core</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\game\game.h">
+      <Filter>source\game\game</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\globals.h">
+      <Filter>source\system</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\logger\logger.h">
+      <Filter>source\system\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\memory\memory.h">
+      <Filter>source\system\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\protection\antiattach\antiattach.h">
+      <Filter>source\system\protection\antiattach</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\protection\antidebug\antidebug.h">
+      <Filter>source\system\protection\antidebug</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\protection\protection.h">
+      <Filter>source\system\protection</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\protection\xorstr.h">
+      <Filter>source\system\protection</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\protection\encryption\xorstr.h">
+      <Filter>source\system\protection\encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\protection\antidump\antidump.h">
+      <Filter>source\system\protection\antidump</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\offsets\rva.h">
+      <Filter>source\game\offsets</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\mcp\mcp_server.h">
+      <Filter>source\hacks\luau\mcp</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\wallcheck\wallcheck.h">
+      <Filter>source\game\wallcheck</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\wallcheck\obb.h">
+      <Filter>source\game\wallcheck</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\assets\icons\dexicons.h">
+      <Filter>source\menu\assets\icons</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\assets\icons\tabicon.h">
+      <Filter>source\menu\assets\icons</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\assets\icons\cursorbytes.h">
+      <Filter>source\menu\assets\icons</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\assets\fonts\maplefonts.h">
+      <Filter>source\menu\assets\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\assets\fonts\smallestpixel7.h">
+      <Filter>source\menu\assets\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\animations\animations.h">
+      <Filter>source\menu\animations</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\editor\editor.h">
+      <Filter>source\menu\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\menu\settings\theme.h">
+      <Filter>source\menu\menu\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\render\render.h">
+      <Filter>source\menu\render</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\menu\data\fonts.h">
+      <Filter>source\menu\menu\data</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\menu\data\images.h">
+      <Filter>source\menu\menu\data</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\menu\settings\colors.h">
+      <Filter>source\menu\menu\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\menu\settings\elements.h">
+      <Filter>source\menu\menu\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\menu\settings\functions.h">
+      <Filter>source\menu\menu\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="source\menu\menu\settings\variables.h">
+      <Filter>source\menu\menu\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system\scanner\rescan.h">
+      <Filter>source\system\scanner</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\math\math.h">
+      <Filter>source\game\math</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\offsets\fflags.h">
+      <Filter>source\game\offsets</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\offsets\offsets.h">
+      <Filter>source\game\offsets</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\sdk.h">
+      <Filter>source\game</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\lighting\lighting.h">
+      <Filter>source\hacks\visuals\lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\skyshader\skyshader.h">
+      <Filter>source\hacks\visuals\skyshader</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\combat\silent\raycast\raycast.h">
+      <Filter>source\hacks\combat\silent\raycast</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\audio\hitsound\hitsounds.h">
+      <Filter>source\hacks\exploits\audio\hitsound</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\performance\performance.h">
+      <Filter>source\hacks\system\performance</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\vm\vm.h">
+      <Filter>source\hacks\luau\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\bridge\bridge.h">
+      <Filter>source\hacks\luau\bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\drawing\drawing.h">
+      <Filter>source\hacks\luau\drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\gc\gc.h">
+      <Filter>source\hacks\luau\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\mem\mem.h">
+      <Filter>source\hacks\luau\mem</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\types\types.h">
+      <Filter>source\hacks\luau\types</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\mem\mem_compat.h">
+      <Filter>source\hacks\luau\mem</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\instance.new\callgate\call_gate.h">
+      <Filter>source\hacks\luau\instance.new\callgate</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\instance.new\creation\instance_create.h">
+      <Filter>source\hacks\luau\instance.new\creation</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\instance.new\creation\instance_new.h">
+      <Filter>source\hacks\luau\instance.new\creation</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\luau\instance.new\reflection\reflect.h">
+      <Filter>source\hacks\luau\instance.new\reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\environment\skybox\skybox.h">
+      <Filter>source\hacks\exploits\environment\skybox</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lapi.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lauxlib.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lcode.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lctype.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\ldebug.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\ldo.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lfunc.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lgc.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\ljumptab.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\llex.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\llimits.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lmem.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lobject.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lopcodes.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lopnames.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lparser.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lprefix.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lstate.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lstring.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\ltable.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\ltm.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lua.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\luaconf.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lualib.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lundump.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lvm.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="external\lua\lzio.h">
+      <Filter>external\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\notifications\notifications.h">
+      <Filter>source\hacks\system\notifications</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\audio\hitsound\hitsoundsdata.h">
+      <Filter>source\hacks\exploits\audio\hitsound</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\exploits\audio\hitsound\hitsoundsres.h">
+      <Filter>source\hacks\exploits\audio\hitsound</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\visuals\hit\hit.h">
+      <Filter>source\hacks\visuals\hit</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\waypoints\waypoints.h">
+      <Filter>source\hacks\system\waypoints</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hacks\system\serverbrowser\serverbrowser.h">
+      <Filter>source\hacks\system\serverbrowser</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nlohmann\json.hpp" />
+    <ClInclude Include="source\hacks\luau\gc\gc.h" />
+    <ClInclude Include="external\nlohmann\json.hpp" />
+    <ClInclude Include="source\hacks\luau\gc\gc.h" />
+    <ClInclude Include="external\nlohmann\json.hpp" />
+    <ClInclude Include="source\hacks\luau\gc\gc.h" />
+    <ClInclude Include="external\nlohmann\json.hpp" />
+    <ClInclude Include="source\hacks\visuals\chams\engine\engine.h" />
+    <ClInclude Include="source\hacks\visuals\chams\highlight\highlight.h" />
+    <ClInclude Include="source\hacks\visuals\chams\highlight\layout.h" />
+    <ClInclude Include="source\hacks\luau\gc\gc.h" />
+    <ClInclude Include="external\nlohmann\json.hpp" />
+    <ClInclude Include="source\hacks\luau\gc\gc.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="source\system\memory\luck.asm">
+      <Filter>source\system\memory</Filter>
+    </MASM>
+    <MASM Include="source\hacks\combat\silent\raycast\thunk.asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\hacks\exploits\audio\hitsound\hitsounds.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="source\menu\assets\icons\dexiconsloader.inc" />
+  </ItemGroup>
+</Project>
